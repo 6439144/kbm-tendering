@@ -1,0 +1,43 @@
+name: Deploy KBM Platform to Azure Web App
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build, QA Test & Artifact Packaging
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22.x LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Validate Bootstrap & Zero-Cost Governance
+        run: node scripts/bootstrap-validate.mjs
+
+      - name: Execute Full QA Test Suite
+        run: npm test
+
+      - name: Execute End-to-End Cycle Test
+        run: |
+          npm start &
+          sleep 3
+          node scripts/test-complete-cycle.mjs
+
+      - name: Package Deployment Artifact
+        run: |
+          zip -r kbm-deploy.zip apps kbm-platform-audit-service kbm-platform-contracts kbm-platform-docs kbm-platform-document-service kbm-platform-edge kbm-platform-infrastructure kbm-platform-integration-service kbm-platform-marketplace-service kbm-platform-notification-service kbm-platform-payment-service kbm-platform-procurement-service kbm-platform-qa kbm-platform-ui kbm-platform-vendor-service kbm-platform-workflow-service kbm-repo-template services scripts package.json README.md server.js
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kbm-platform-build
+          path: kbm-deploy.zip
+          retention-days: 7

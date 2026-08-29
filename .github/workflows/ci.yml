@@ -27,7 +27,7 @@ jobs:
       - name: Validate Bootstrap Zero-Cost Governance
         run: node scripts/bootstrap-validate.mjs
 
-      - name: Run Test Suite (35 Passing Tests)
+      - name: Run Platform QA Test Suite (43 Passing Tests)
         run: npm test
 
       - name: Run End-to-End Vertical Slice Cycle
