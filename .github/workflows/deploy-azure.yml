@@ -1,0 +1,60 @@
+name: Deploy KBM Platform to Azure
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploymentProfile:
+        description: 'Deployment Profile (bootstrap = $0/mo Free Tier, production = Enterprise Cluster)'
+        required: true
+        default: 'bootstrap'
+        type: choice
+        options:
+          - bootstrap
+          - production
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Azure App Service / Container Apps
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Run Test Suite
+        run: npm test
+
+      - name: Azure Login
+        if: env.AZURE_CREDENTIALS != ''
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Azure Bicep Infrastructure
+        if: env.AZURE_CREDENTIALS != ''
+        uses: azure/arm-deploy@v2
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ secrets.AZURE_RESOURCE_GROUP || 'rg-kbm-platform' }}
+          template: ./kbm-platform-infrastructure/main.bicep
+          parameters: deploymentProfile=${{ github.event.inputs.deploymentProfile || 'bootstrap' }}
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Web Application
+        if: env.AZURE_CREDENTIALS != ''
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME || 'kbm-platform-portal' }}
+          package: .
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}

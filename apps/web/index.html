@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KBM Procurement Platform | منصة إدارة المناقصات والمشتريات</title>
+    <meta name="description" content="KBM Multi-Tenant SaaS Procurement and Tender Management Platform." />
+    <!-- Fonts: Inter & Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <!-- Top Global Announcement & Language Bar -->
+    <nav class="global-navbar">
+      <div class="brand-group">
+        <div class="brand-logo">KBM</div>
+        <div class="brand-text">
+          <span class="brand-title" data-i18n="appTitle">منصة إدارة المناقصات والمشتريات</span>
+          <span class="brand-subtitle" data-i18n="appSubtitle">KBM Procurement & Tender Management SaaS</span>
+        </div>
+      </div>
+
+      <div class="nav-controls">
+        <div class="env-badges">
+          <span class="badge badge-success" data-i18n="liveDemo">عرض حي للعميل</span>
+          <span class="badge badge-outline" data-i18n="bootstrapProfile">باقة التأسيس ($0/شهر)</span>
+        </div>
+
+        <div class="lang-switch-wrapper">
+          <button id="lang-toggle-btn" class="btn btn-sm btn-secondary" type="button">
+            <span id="lang-label">English</span>
+          </button>
+        </div>
+
+        <div id="auth-controls" class="auth-controls hidden">
+          <button id="btn-start-tour" class="tour-btn" type="button">
+            <span>🎬</span>
+            <span data-i18n="btnGuidedTour">الجولة التعريفية التفاعلية</span>
+          </button>
+
+          <div class="user-pill">
+            <span class="user-avatar" id="nav-user-avatar">👤</span>
+            <div class="user-info">
+              <strong id="nav-user-name">—</strong>
+              <small id="nav-user-role">—</small>
+            </div>
+          </div>
+          <button id="logout-button" class="btn btn-sm btn-danger" type="button" data-i18n="logout">تسجيل الخروج</button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Login Modal / Screen -->
+    <div id="login-screen" class="login-view">
+      <div class="login-container">
+        <div class="login-card">
+          <div class="login-header">
+            <div class="kbm-shield">KBM</div>
+            <h2 data-i18n="loginTitle">تسجيل الدخول للمنصة</h2>
+            <p data-i18n="loginSubtitle">بوابة المشتريات والمناقصات الموحدة للجهات الحكومية والشركات</p>
+          </div>
+
+          <form id="login-form" class="login-form">
+            <div class="form-group">
+              <label for="login-email" data-i18n="emailLabel">البريد الإلكتروني</label>
+              <input type="email" id="login-email" name="email" value="staff@kbm.demo" required />
+            </div>
+            <div class="form-group">
+              <label for="login-password" data-i18n="passwordLabel">كلمة المرور</label>
+              <input type="password" id="login-password" name="password" value="password123" required />
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" data-i18n="signInBtn">تسجيل الدخول</button>
+          </form>
+
+          <div class="quick-personas">
+            <p class="quick-title" data-i18n="quickPersonasTitle">حسابات العرض التوضيحي السريع (Demo Personas):</p>
+            <div class="persona-buttons">
+              <button type="button" class="persona-chip" data-email="staff@kbm.demo">
+                <strong>🏛️ فريق المناقصات الداخلي</strong>
+                <small>Staff: staff@kbm.demo / password123</small>
+              </button>
+              <button type="button" class="persona-chip" data-email="tenant-admin@kbm.demo">
+                <strong>⚙️ مدير الجهة الحكومية</strong>
+                <small>Admin: tenant-admin@kbm.demo / password123</small>
+              </button>
+              <button type="button" class="persona-chip" data-email="vendor@kbm.demo">
+                <strong>🏢 بوابة الشركات والموردين</strong>
+                <small>Vendor: vendor@kbm.demo / password123</small>
+              </button>
+            </div>
+          </div>
+
+          <div class="marketplace-shortcut">
+            <a href="#marketplace" id="link-marketplace-preview" data-i18n="marketplacePreviewLink">
+              🛒 تجربة واجهة متجر مايكروسوفت (Microsoft Marketplace SaaS Onboarding)
+            </a>
+          </div>
+
+          <div id="login-status" class="login-status"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Application Workspace Shell -->
+    <div id="app-shell" class="app-shell hidden">
+      <!-- Portal Navigation Tabs -->
+      <header class="portal-nav-bar">
+        <div class="portal-tabs">
+          <button class="portal-tab active" data-portal="staff" data-i18n="tabStaff">
+            🏛️ بوابة فريق المناقصات الداخلي (Staff)
+          </button>
+          <button class="portal-tab" data-portal="vendor" data-i18n="tabVendor">
+            🏢 بوابة الموردين والشركات (Vendor Portal)
+          </button>
+          <button class="portal-tab" data-portal="admin" data-i18n="tabAdmin">
+            ⚙️ إدارة النظام والحوكمة (Tenant Admin)
+          </button>
+          <button class="portal-tab" data-portal="marketplace" data-i18n="tabMarketplace">
+            🛒 متجر مايكروسوفت ساس (Marketplace SaaS)
+          </button>
+        </div>
+
+        <div class="nav-actions-right">
+          <div class="live-notifications-bell" id="btn-toggle-notifs" title="الإشعارات والإجراءات المطلوبة">
+            <span class="bell-icon">🔔</span>
+            <span class="notif-count-badge" id="unread-notif-count">0</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Notifications Slideout Panel -->
+      <aside id="notifications-panel" class="notifications-drawer hidden">
+        <div class="drawer-header">
+          <h4 data-i18n="notifCenterTitle">مركز الإشعارات والإجراءات المطلوبة</h4>
+          <button class="btn-close" id="btn-close-notifs">✕</button>
+        </div>
+        <div id="notifications-list" class="drawer-content">
+          <!-- Notification items rendered via JS -->
+        </div>
+      </aside>
+
+      <!-- Main Portal Content Panels -->
+      <main class="portal-content-container">
+
+        <!-- ========================================================= -->
+        <!-- PORTAL 1: INTERNAL STAFF PORTAL                          -->
+        <!-- ========================================================= -->
+        <section id="portal-staff" class="portal-section active">
+          <div class="section-title-banner" id="tour-staff-banner">
+            <div>
+              <h2 data-i18n="staffPortalHeading">إدارة طلبات المناقصات ودورات الاعتماد الداخلي</h2>
+              <p data-i18n="staffPortalSubheading">استقبال الطلبات (رسلني / كتاب مدير عام)، مسارات التدقيق، وإطلاق المناقصات</p>
+            </div>
+            <button class="btn btn-primary" id="btn-open-request-modal" data-i18n="btnNewRequest">
+              + تسجيل طلب مناقصة جديد
+            </button>
+          </div>
+
+          <div class="kpi-cards-grid">
+            <div class="kpi-card">
+              <span class="kpi-label" data-i18n="kpiActiveRequests">طلبات قيد المراجعة</span>
+              <strong class="kpi-value" id="kpi-active-reqs">3</strong>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label" data-i18n="kpiPublishedTenders">المناقصات المطروحة</span>
+              <strong class="kpi-value" id="kpi-published-tenders">2</strong>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label" data-i18n="kpiWorkflowProgress">متوسط تقدم الاعتمادات</span>
+              <strong class="kpi-value" id="kpi-overall-progress">55%</strong>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label" data-i18n="kpiAuditIntegrity">حالة سجل التدقيق الرقمي</span>
+              <strong class="kpi-value text-success" data-i18n="chainValid">سليم وموثق (SHA-256)</strong>
+            </div>
+          </div>
+
+          <!-- ========================================================= -->
+          <!-- VISUAL TENDER LIFECYCLE & JOURNEY TRACKER                 -->
+          <!-- ========================================================= -->
+          <div class="journey-visualizer-container" id="tour-journey-visualizer">
+            <div class="journey-header">
+              <div>
+                <h3 data-i18n="journeyTitle">🗺️ خريطة المسار الزمني ومراحل المناقصة (Tender Lifecycle Journey)</h3>
+                <small class="text-muted" data-i18n="journeySubtitle">تتبع بصري تفاعلي للمراحل والجهات الرقابية والموافقات لكل مناقصة</small>
+              </div>
+
+              <div class="journey-selector-bar">
+                <label data-i18n="selectTenderToView">المناقصة المحددة:</label>
+                <select id="journey-tender-select" class="form-select-sm">
+                  <option value="tnd-001">MOI/TNT/2026/001 — البنية التحتية للخوادم والربط السحابي</option>
+                  <option value="tnd-002">MOI/TNT/2026/002 — كاميرات المراقبة والرادارات الأمنية</option>
+                </select>
+                <div class="journey-progress-tracker">
+                  <span class="badge badge-success" id="journey-percent-badge">60% مكتمل</span>
+                  <div class="journey-bar-outer">
+                    <div class="journey-bar-inner" id="journey-bar-fill" style="width: 60%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5-Stage Stepper Pipeline -->
+            <div class="journey-pipeline-stepper" id="journey-stepper-nodes">
+              <!-- Stage 1: Preparation -->
+              <div class="journey-step-node completed" data-stage="1">
+                <div class="journey-node-icon">✓</div>
+                <div class="journey-node-title" data-i18n="stage1Title">1. التجهيز والميزانية</div>
+                <div class="journey-node-role">النظم & المالية</div>
+              </div>
+
+              <!-- Stage 2: Regulatory Approvals -->
+              <div class="journey-step-node completed" data-stage="2">
+                <div class="journey-node-icon">✓</div>
+                <div class="journey-node-title" data-i18n="stage2Title">2. الفتوى والتشريع ولجنة الشراء</div>
+                <div class="journey-node-role">لجنة الشراء & الرقابة</div>
+              </div>
+
+              <!-- Stage 3: Launch & Prequalification -->
+              <div class="journey-step-node active" data-stage="3">
+                <div class="journey-node-icon">3</div>
+                <div class="journey-node-title" data-i18n="stage3Title">3. إعلان الطرح والتأهيل (CAPT)</div>
+                <div class="journey-node-role">الجهاز المركزي للمناقصات</div>
+              </div>
+
+              <!-- Stage 4: Technical Study & Award -->
+              <div class="journey-step-node" data-stage="4">
+                <div class="journey-node-icon">4</div>
+                <div class="journey-node-title" data-i18n="stage4Title">4. فض العطاءات والترسية</div>
+                <div class="journey-node-role">النظم & لجنة الشراء</div>
+              </div>
+
+              <!-- Stage 5: Audit Bureau & Signing -->
+              <div class="journey-step-node" data-stage="5">
+                <div class="journey-node-icon">5</div>
+                <div class="journey-node-title" data-i18n="stage5Title">5. ديوان المحاسبة وتوقيع العقد</div>
+                <div class="journey-node-role">ديوان المحاسبة & وكيل الوزارة</div>
+              </div>
+            </div>
+
+            <!-- Stage Task Drill-down Box -->
+            <div class="journey-active-stage-details" id="journey-stage-drilldown">
+              <div class="journey-stage-detail-header">
+                <div>
+                  <strong id="journey-stage-active-name" style="color:var(--primary); font-size:1rem;">المرحلة الحالية: 3. إعلان الطرح والتأهيل عبر CAPT</strong>
+                  <p style="font-size:0.82rem; color:var(--text-muted); margin-top:2px;">الجهة المسئولة: الجهاز المركزي للمناقصات (CAPT) | الحد الأقصى للمدة: 30 يوماً</p>
+                </div>
+                <span class="badge badge-primary">جارية الآن (IN PROGRESS)</span>
+              </div>
+
+              <div class="stage-tasks-grid" id="journey-stage-tasks-list">
+                <div class="stage-task-item">
+                  <div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                      <span class="badge badge-success">APPROVED ✓</span>
+                      <small class="text-muted">15 Days</small>
+                    </div>
+                    <strong style="font-size:0.85rem;">كتاب إلى CAPT لطلب الإعلان عن المناقصة</strong>
+                  </div>
+                  <small style="color:var(--text-muted); margin-top:6px;">المسئولية: الرقابة</small>
+                </div>
+
+                <div class="stage-task-item" style="border-color:var(--primary);">
+                  <div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                      <span class="badge badge-primary">IN REVIEW ⏳</span>
+                      <small class="text-muted">60 Days</small>
+                    </div>
+                    <strong style="font-size:0.85rem;">إعلان موافقة CAPT على طرح المناقصة</strong>
+                  </div>
+                  <div style="margin-top:8px; display:flex; gap:0.4rem;">
+                    <button class="btn btn-sm btn-primary" onclick="advanceJourneyDemo()">اعتماد الانتقال للمرحلة التالية ✓</button>
+                  </div>
+                </div>
+
+                <div class="stage-task-item">
+                  <div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                      <span class="badge badge-outline">QUEUED</span>
+                      <small class="text-muted">30 Days</small>
+                    </div>
+                    <strong style="font-size:0.85rem;">نشر إعلان الطرح 100% في الجريدة الرسمية</strong>
+                  </div>
+                  <small style="color:var(--text-muted); margin-top:6px;">المسئولية: CAPT</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Workflow Engine Board (Practices & Tenders) -->
+          <div class="panel-box" id="tour-workflow-panel">
+            <div class="panel-header">
+              <div class="header-titles">
+                <h3 data-i18n="workflowBoardTitle">لوحة متابعة إجراءات ومراحل الطرح (Workflow Tracker Engine)</h3>
+                <small data-i18n="workflowTrackerRef">مبني وفق نماذج الممارسات (8 مراحل) والمناقصات (35 مرحلة) التاريخية</small>
+              </div>
+              <div class="template-selector-group">
+                <label data-i18n="selectWorkflowTemplate">النموذج النشط:</label>
+                <select id="select-workflow-template" class="form-select-sm">
+                  <option value="PRACTICES">إجراءات الممارسات — 8 خطوات (Practices)</option>
+                  <option value="TENDERS">إجراءات المناقصات الحكومية — 35 خطوة (Tenders)</option>
+                </select>
+              </div>
+            </div>
+            <div id="workflow-board-container" class="workflow-board-container">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Tender Publishing Panel -->
+          <div class="panel-box" id="tour-tenders-table">
+            <div class="panel-header">
+              <h3 data-i18n="tendersCatalogStaff">سجل المناقصات والممارسات المطروحة</h3>
+              <button class="btn btn-sm btn-outline" id="btn-open-tender-modal" data-i18n="btnPublishTender">+ إنشاء وطرح مناقصة جديدة</button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="thRef">رقم المرجع</th>
+                    <th data-i18n="thTitle">عنوان المناقصة / الممارسة</th>
+                    <th data-i18n="thActivities">الأنشطة المستهدفة</th>
+                    <th data-i18n="thGrade">الدرجة المطلوبة</th>
+                    <th data-i18n="thFee">قيمة الكراسة</th>
+                    <th data-i18n="thStatus">الحالة</th>
+                    <th data-i18n="thActions">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="staff-tenders-tbody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- PORTAL 2: EXTERNAL VENDOR PORTAL                         -->
+        <!-- ========================================================= -->
+        <section id="portal-vendor" class="portal-section">
+          <div class="section-title-banner">
+            <div>
+              <h2 data-i18n="vendorPortalHeading">بوابة الموردين والشركات المؤهلة</h2>
+              <p data-i18n="vendorPortalSubheading">استعراض المناقصات المطابقة للتأهيل، الشراء عبر كي نت، وحماية المحتوى</p>
+            </div>
+            <div class="vendor-profile-badge" id="vendor-profile-status-box">
+              <span class="badge badge-success" id="vendor-grade-tag">الدرجة الثانية (Second Grade)</span>
+              <span class="badge badge-info" id="vendor-sub-tag">الاشتراك السنوي: ساري ✓</span>
+            </div>
+          </div>
+
+          <!-- Vendor Notice Banner -->
+          <div id="vendor-alert-banner" class="alert-banner info" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:1rem; border-radius:8px; margin-bottom:1.5rem; display:flex; gap:0.75rem;">
+            <span class="alert-icon" style="font-size:1.3rem;">🛡️</span>
+            <div class="alert-text">
+              <strong style="color:#15803d;" data-i18n="vendorNoticeTitle">تنبيه الموردين المؤهلين:</strong>
+              <span style="color:#166534;" data-i18n="vendorNoticeText">تعرض البوابة فقط المناقصات المطابقة للأنشطة التجارية المسجلة ودرجة تصنيف شركتكم.</span>
+            </div>
+          </div>
+
+          <!-- Eligible Tenders Grid -->
+          <div class="panel-box" id="tour-vendor-catalog">
+            <div class="panel-header">
+              <h3 data-i18n="eligibleTendersTitle">المناقصات المتاحة للشراء والتأهيل</h3>
+              <button class="btn btn-sm btn-secondary" id="btn-request-upgrade" data-i18n="btnRequestUpgrade">
+                ⬆️ طلب ترقية الدرجة
+              </button>
+            </div>
+
+            <div class="tenders-cards-grid" id="vendor-tenders-grid">
+              <!-- Rendered dynamically with server-side eligibility breakdown -->
+            </div>
+          </div>
+
+          <!-- Vendor Purchased Tenders & Receipts -->
+          <div class="panel-box">
+            <div class="panel-header">
+              <h3 data-i18n="purchasedReceiptsTitle">إيصالات الشراء وكراسات الشروط المشتراة</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="thReceiptNo">رقم الإيصال</th>
+                    <th data-i18n="thTender">المناقصة</th>
+                    <th data-i18n="thAmount">المبلغ (د.ك)</th>
+                    <th data-i18n="thDate">تاريخ الدفع</th>
+                    <th data-i18n="thKnetRef">مرجع كي نت</th>
+                    <th data-i18n="thPrintReceipt">الإيصال المعتمد</th>
+                  </tr>
+                </thead>
+                <tbody id="vendor-receipts-tbody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- PORTAL 3: TENANT ADMIN & GOVERNANCE                      -->
+        <!-- ========================================================= -->
+        <section id="portal-admin" class="portal-section">
+          <div class="section-title-banner">
+            <div>
+              <h2 data-i18n="adminPortalHeading">إدارة الجهة الحكومية وحوكمة الموردين</h2>
+              <p data-i18n="adminPortalSubheading">تصنيف الموردين، الإيقاف المؤقت، الإعفاءات، وسجل التدقيق غير القابل للتعديل</p>
+            </div>
+            <button class="btn btn-outline" id="btn-verify-audit-chain" data-i18n="btnVerifyAudit">
+              🛡️ التحقق من سلامة سجل التدقيق (SHA-256)
+            </button>
+          </div>
+
+          <!-- Vendors Governance Table -->
+          <div class="panel-box">
+            <div class="panel-header">
+              <h3 data-i18n="vendorsGovernanceTitle">سجل الشركات والموردين وإدارة الصلاحيات</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="thCompany">اسم الشركة</th>
+                    <th data-i18n="thCR">السجل التجاري</th>
+                    <th data-i18n="thGrade">درجة التصنيف</th>
+                    <th data-i18n="thActivities">الأنشطة</th>
+                    <th data-i18n="thStatus">حالة الحساب</th>
+                    <th data-i18n="thActions">إجراءات الحوكمة</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-vendors-tbody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Audit Explorer Panel -->
+          <div class="panel-box" id="tour-audit-explorer">
+            <div class="panel-header">
+              <div class="header-titles">
+                <h3 data-i18n="auditExplorerTitle">سجل الأحداث والرقابة الرقمية (Cosmos DB Immutable Audit Log)</h3>
+                <small data-i18n="auditSub">كل حدث مشفر ومربوط بالحدث السابق عبر سلسلة التجزئة SHA-256 Hash Chain</small>
+              </div>
+              <button class="btn btn-sm btn-outline" id="btn-export-audit" data-i18n="btnExportAudit">📥 تصدير حزمة التدقيق (JSON)</button>
+            </div>
+            <div class="audit-log-viewer" id="audit-log-viewer">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- PORTAL 4: MICROSOFT MARKETPLACE SAAS                     -->
+        <!-- ========================================================= -->
+        <section id="portal-marketplace" class="portal-section">
+          <div class="section-title-banner">
+            <div>
+              <h2 data-i18n="marketplaceHeading">متجر مايكروسوفت — تجربة الاشتراك والتفعيل (SaaS Fulfillment v2)</h2>
+              <p data-i18n="marketplaceSubheading">تكامل متجر Azure التجاري: معالجة الرموز، تفعيل الاشتراكات، وربط خطافات الويب (Webhooks)</p>
+            </div>
+            <span class="badge badge-primary">Microsoft Commercial Marketplace Certified</span>
+          </div>
+
+          <div class="marketplace-grid">
+            <div class="marketplace-plan-card">
+              <div class="plan-badge">Starter</div>
+              <h3>باقة المشتريات الأساسية</h3>
+              <p class="plan-price">$499 <small>/ شهر</small></p>
+              <ul class="plan-features">
+                <li>حتى 10 مناقصات نشطة سنوياً</li>
+                <li>بوابة موردين قياسية (3 درجات)</li>
+                <li>تخزين محلي / Azurite Development</li>
+                <li>باقة التأسيس المجانية في Azure</li>
+              </ul>
+              <button class="btn btn-outline btn-block btn-select-plan" data-plan="kbm-starter">اختيار الباقة</button>
+            </div>
+
+            <div class="marketplace-plan-card featured">
+              <div class="plan-badge popular">الموصى بها للجهات الحكومية</div>
+              <h3>باقة المشتريات الاحترافية</h3>
+              <p class="plan-price">$1,499 <small>/ شهر</small></p>
+              <ul class="plan-features">
+                <li>حتى 50 مناقصة نشطة وممارسة</li>
+                <li>محرك مسارات العمل المخصص (Workflow Engine)</li>
+                <li>ربط نظام المراسلات الحكومي (رسلني)</li>
+                <li>واجهات ثنائية اللغة (عربي / إنجليزي RTL)</li>
+              </ul>
+              <button class="btn btn-primary btn-block btn-select-plan" data-plan="kbm-professional">تفعيل الباقة الاحترافية</button>
+            </div>
+
+            <div class="marketplace-plan-card">
+              <div class="plan-badge">Enterprise</div>
+              <h3>باقة المؤسسات الكبرى</h3>
+              <p class="plan-price">$3,999 <small>/ شهر</small></p>
+              <ul class="plan-features">
+                <li>عدد غير محدود من المناقصات</li>
+                <li>سجل تدقيق مخصص في Azure Cosmos DB</li>
+                <li>ربط مع أنظمة الأرشفة والـ EDMS المؤسسية</li>
+                <li>اتفاقية مستوى خدمة 24/7 SLA</li>
+              </ul>
+              <button class="btn btn-outline btn-block btn-select-plan" data-plan="kbm-enterprise">طلب باقة المؤسسات</button>
+            </div>
+          </div>
+
+          <!-- SaaS Token Resolution Simulator -->
+          <div class="panel-box" style="margin-top: 1.75rem;" id="tour-marketplace-box">
+            <div class="panel-header">
+              <h3 data-i18n="marketplaceSimTitle">محاكي استلام رمز الشراء من Azure Marketplace (Token Resolution)</h3>
+            </div>
+            <div class="marketplace-test-box">
+              <div class="form-group">
+                <label data-i18n="marketplaceTokenLabel">رمز تعريف الشراء (Marketplace Identification Token):</label>
+                <input type="text" id="marketplace-input-token" value="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.marketplace-token-demo" />
+              </div>
+              <div class="action-buttons-row" style="display:flex; gap:0.6rem; flex-wrap:wrap; margin-top:0.75rem;">
+                <button class="btn btn-secondary" id="btn-resolve-token" data-i18n="btnResolveToken">🔍 فك الرمز (Resolve Token)</button>
+                <button class="btn btn-success" id="btn-activate-subscription" data-i18n="btnActivateSub">🚀 تفعيل الاشتراك (Activate Subscription)</button>
+                <button class="btn btn-outline" id="btn-sim-webhook" data-i18n="btnSimWebhook">⚡ محاكاة خطاف الويب (Simulate Webhook)</button>
+              </div>
+              <div id="marketplace-output" class="console-output">
+                // نتيجة معالجة رمز المتجر ستظهر هنا...
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- INTERACTIVE GUIDED DEMO TOUR SPOTLIGHT                    -->
+    <!-- ========================================================= -->
+    <div id="guided-tour-container" class="hidden">
+      <div class="guided-tour-backdrop"></div>
+      <div class="tour-spotlight-box">
+        <div class="tour-header">
+          <span class="tour-step-tag" id="tour-step-badge">الخطوة 1 من 5</span>
+          <button class="btn-close" id="btn-exit-tour" title="إغلاق الجولة">✕</button>
+        </div>
+        <h4 class="tour-title" id="tour-step-title">مرحباً بك في منصة KBM</h4>
+        <p class="tour-description" id="tour-step-desc">
+          استكشف المزايا الرئيسية لمنصة المشتريات والمناقصات الحكومية خطوة بخطوة.
+        </p>
+        <div class="tour-footer">
+          <div class="tour-progress-dots" id="tour-dots">
+            <span class="tour-dot active"></span>
+            <span class="tour-dot"></span>
+            <span class="tour-dot"></span>
+            <span class="tour-dot"></span>
+            <span class="tour-dot"></span>
+          </div>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-sm btn-secondary" id="btn-tour-prev">السابق</button>
+            <button class="btn btn-sm btn-primary" id="btn-tour-next">التالي</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODALS                                                    -->
+    <!-- ========================================================= -->
+
+    <!-- Modal 1: Request Intake Modal -->
+    <div id="modal-request-intake" class="modal-overlay hidden">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 data-i18n="modalRequestTitle">تسجيل طلب مناقصة جديد (Request Intake)</h3>
+          <button class="modal-close" data-close="modal-request-intake">✕</button>
+        </div>
+        <form id="form-request-intake">
+          <div class="modal-body">
+            <div class="form-group">
+              <label data-i18n="labelIntakeChannel">قناة ورود الطلب:</label>
+              <select id="req-channel" class="form-select" required>
+                <option value="manual_gm_letter">كتاب رسمي من مدير عام الإدارة (يدوي مع مسح ضوئي إلزامي)</option>
+                <option value="raslni">مراسلة إلكترونية عبر نظام رسلني (Raslni G2G)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label data-i18n="labelReqDept">الإدارة الطالبة:</label>
+              <input type="text" id="req-dept" value="إدارة مركز نظم المعلومات" required />
+            </div>
+            <div class="form-group">
+              <label data-i18n="labelReqTitle">موضوع / عنوان الطلب:</label>
+              <input type="text" id="req-title" value="تحديث منظومة الخوادم وتخزين البيانات السحابية" required />
+            </div>
+            <div class="form-group">
+              <label data-i18n="labelBudget">الميزانية التقديرية (د.ك):</label>
+              <input type="number" id="req-budget" value="180000" required />
+            </div>
+            <div class="form-group" id="group-gm-scan">
+              <label data-i18n="labelScanAttachment">مرفق المسح الضوئي لكتاب المدير العام (إلزامي):</label>
+              <input type="file" id="req-file" class="form-control" />
+              <small class="text-muted">ملاحظة: النظام يشترط وجود المرفق لقبول تسجيل الطلب اليدوي (FR-012).</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-close="modal-request-intake" data-i18n="btnCancel">إلغاء</button>
+            <button type="submit" class="btn btn-primary" data-i18n="btnSubmitRequest">تسجيل الطلب وبدء دورة الاعتماد</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 2: Create Tender Modal -->
+    <div id="modal-create-tender" class="modal-overlay hidden">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 data-i18n="modalTenderTitle">إنشاء وطرح مناقصة جديدة</h3>
+          <button class="modal-close" data-close="modal-create-tender">✕</button>
+        </div>
+        <form id="form-create-tender">
+          <div class="modal-body">
+            <div class="form-group">
+              <label data-i18n="labelTenderTitle">عنوان المناقصة:</label>
+              <input type="text" id="tender-title" value="صيانة وتشغيل كاميرات المراقبة والرادارات الأمنية" required />
+            </div>
+            <div class="form-group">
+              <label data-i18n="labelTargetActivity">النشاط المستهدف (تصنيف وزارة التجارة والصناعة):</label>
+              <select id="tender-activity" class="form-select" required>
+                <option value="IT-SYS-01">تكنولوجيا ونظم المعلومات (IT-SYS-01)</option>
+                <option value="SEC-SURV-02" selected>كاميرات المراقبة والأنظمة الأمنية (SEC-SURV-02)</option>
+                <option value="CYBER-SEC-09">عمليات الأمن السيبراني (CYBER-SEC-09)</option>
+                <option value="FACILITY-MGT-08">صيانة المنشآت والمرافق العامة (FACILITY-MGT-08)</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group col">
+                <label data-i18n="labelGradeRule">درجة التصنيف المطلوبة:</label>
+                <select id="tender-grade" class="form-select" required>
+                  <option value="FIRST">الدرجة الأولى (First Grade)</option>
+                  <option value="SECOND" selected>الدرجة الثانية (Second Grade)</option>
+                  <option value="THIRD">الدرجة الثالثة (Third Grade)</option>
+                  <option value="ANY">أي درجة (Any Grade)</option>
+                </select>
+              </div>
+              <div class="form-group col">
+                <label data-i18n="labelPrice">قيمة كراسة الشروط (د.ك):</label>
+                <input type="number" id="tender-price" value="100" required />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-close="modal-create-tender" data-i18n="btnCancel">إلغاء</button>
+            <button type="submit" class="btn btn-primary" data-i18n="btnPublish">اعتماد ونشر المناقصة</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 3: Secure Watermarked Tender Document Viewer -->
+    <div id="modal-doc-viewer" class="modal-overlay hidden">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-header">
+          <div>
+            <h3 id="doc-viewer-title">كراسة الشروط والمواصفات الفنية للمناقصة</h3>
+            <small class="text-warning" style="font-weight:700;">🔒 عرض محمي بعلامة مائية ديناميكية مانعة للتسريب والتصوير (Anti-Screenshot Protection)</small>
+          </div>
+          <button class="modal-close" data-close="modal-doc-viewer">✕</button>
+        </div>
+        <div class="modal-body doc-viewer-body">
+          <div class="document-page-simulation" id="document-canvas-wrap">
+            <canvas id="watermark-canvas"></canvas>
+            <div class="document-content-text">
+              <h4>دولة الكويت — وزارة الداخلية</h4>
+              <h5>إدارة المناقصات والعقود</h5>
+              <hr />
+              <p><strong>الباب الأول: الشروط العامة والخاصة للمناقصة</strong></p>
+              <p>1. يلتزم المناقص بتقديم عطائه مشفوعاً بالتأمين الأولي بنسبة (2%) ساري المفعول لمدة (90) يوماً.</p>
+              <p>2. يشترط أن يكون المورد حاملاً لتصنيف معتمد من لجنة المناقصات المركزية وسجل تجاري ساري في نشاط الأنظمة وتكنولوجيا المعلومات.</p>
+              <p>3. مدة تنفيذ العقد: 24 شهراً تبدأ من تاريخ توقيع العقد وتسليم الموقع رسمياً.</p>
+              <p>4. تخضع جميع الإجراءات لرقابة ديوان المحاسبة والفتوى والتشريع وجهاز الرقابة المالية وفقاً للقوانين واللوائح المعمول بها.</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <span class="text-muted small" id="doc-watermark-stamp">—</span>
+          <button type="button" class="btn btn-secondary" data-close="modal-doc-viewer" data-i18n="btnClose">إغلاق</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 4: KNET Payment Checkout Simulator -->
+    <div id="modal-knet-checkout" class="modal-overlay hidden">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-header" style="background:#0284c7; color:white;">
+          <div style="font-weight:800; font-size:1.2rem;">KNET</div>
+          <div>
+            <h4 style="color:white; font-size:0.95rem;">بوابة الدفع الإلكتروني الحكومية</h4>
+            <small style="color:#e0f2fe;">Kuwait Electronic Payment Gateway</small>
+          </div>
+          <button class="modal-close" style="color:white;" data-close="modal-knet-checkout">✕</button>
+        </div>
+        <div class="modal-body knet-body">
+          <div style="background:#f0f9ff; border:1px solid #bae6fd; padding:1rem; border-radius:8px; margin-bottom:1rem; text-align:center;">
+            <span data-i18n="knetAmountLabel" style="font-size:0.85rem; color:#0369a1; display:block;">المبلغ الإجمالي المطلوب:</span>
+            <strong id="knet-pay-amount" style="font-size:1.5rem; color:#0c4a6e;">75.000 د.ك</strong>
+          </div>
+          <div class="form-group">
+            <label>البنك المصدر (Bank):</label>
+            <select class="form-select">
+              <option>National Bank of Kuwait (NBK) - بنك الكويت الوطني</option>
+              <option>Kuwait Finance House (KFH) - بيت التمويل الكويتي</option>
+              <option>Gulf Bank - بنك الخليج</option>
+              <option>Boubyan Bank - بنك بوبيان</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>رقم بطاقة السحب الآلي (Card Number):</label>
+            <input type="text" class="form-control" value="5326 •••• •••• 9921" />
+          </div>
+          <div class="form-row">
+            <div class="form-group col">
+              <label>تاريخ الانتهاء:</label>
+              <input type="text" class="form-control" value="08/28" />
+            </div>
+            <div class="form-group col">
+              <label>الرقم السري (PIN):</label>
+              <input type="password" class="form-control" value="1234" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-knet-checkout">إلغاء الدفع</button>
+          <button type="button" class="btn btn-success" id="btn-confirm-knet-pay">تأكيد ودفع عبر كي نت</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 5: Printable Receipt Modal -->
+    <div id="modal-receipt-view" class="modal-overlay hidden">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 data-i18n="receiptHeader">إيصال سداد رسوم مناقصة رسمي</h3>
+          <button class="modal-close" data-close="modal-receipt-view">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="official-receipt-box" id="official-receipt-content">
+            <div class="receipt-gov-header">
+              <div class="state-seal">🇰🇼</div>
+              <div>
+                <h4>دولة الكويت — وزارة الداخلية</h4>
+                <p style="color:#64748b; font-size:0.9rem;">إدارة الشئون المالية والمشتريات</p>
+                <small style="color:#94a3b8;">Official Payment Confirmation Receipt</small>
+              </div>
+            </div>
+            <hr style="margin:1rem 0; border:0; border-top:1px solid #e2e8f0;" />
+            <div class="receipt-meta-grid">
+              <div><span>رقم الإيصال:</span> <strong id="rec-number">—</strong></div>
+              <div><span>تاريخ الإصدار:</span> <strong id="rec-date">—</strong></div>
+              <div><span>اسم المورد:</span> <strong id="rec-vendor">—</strong></div>
+              <div><span>المبلغ المسدد:</span> <strong id="rec-amount">—</strong></div>
+              <div><span>رقم مرجع KNET:</span> <strong id="rec-knet-ref">—</strong></div>
+              <div><span>كود التفويض:</span> <strong id="rec-auth-code">—</strong></div>
+            </div>
+            <div class="receipt-stamp-box">
+              <div class="certified-stamp">مُعتمد ومسدد إلكترونياً<br>PAID & VERIFIED</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" onclick="window.print()" data-i18n="btnPrint">🖨️ طباعة الإيصال</button>
+          <button type="button" class="btn btn-secondary" data-close="modal-receipt-view" data-i18n="btnClose">إغلاق</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 6: Standalone Tender Journey Visualizer Modal -->
+    <div id="modal-tender-journey" class="modal-overlay hidden">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-header">
+          <div>
+            <h3 id="modal-journey-tender-title">🗺️ المسار التفصيلي والرقابي للمناقصة</h3>
+            <small class="text-muted" id="modal-journey-tender-ref">MOI/TNT/2026/001</small>
+          </div>
+          <button class="modal-close" data-close="modal-tender-journey">✕</button>
+        </div>
+        <div class="modal-body" id="modal-journey-content">
+          <!-- Journey Stepper rendered dynamically -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-tender-journey" data-i18n="btnClose">إغلاق</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

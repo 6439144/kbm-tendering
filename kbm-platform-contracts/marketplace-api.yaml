@@ -1,0 +1,72 @@
+openapi: 3.0.3
+info:
+  title: KBM Commercial Marketplace SaaS Fulfillment API
+  version: 2.0.0
+  description: Microsoft Commercial Marketplace SaaS Fulfillment v2 endpoints for KBM SaaS.
+paths:
+  /marketplace/resolve:
+    post:
+      summary: Resolve marketplace purchase token
+      description: Resolves the marketplace token passed when a customer is redirected to the SaaS landing page.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Resolved subscription details
+  /marketplace/activate:
+    post:
+      summary: Activate marketplace subscription
+      description: Activates an acquired SaaS subscription for a tenant.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subscriptionId, planId, tenantName, adminEmail]
+              properties:
+                subscriptionId:
+                  type: string
+                planId:
+                  type: string
+                  enum: [kbm-starter, kbm-professional, kbm-enterprise]
+                tenantName:
+                  type: string
+                adminEmail:
+                  type: string
+      responses:
+        '200':
+          description: Subscription activated successfully
+  /marketplace/webhook:
+    post:
+      summary: Process marketplace lifecycle webhook
+      description: Handles Azure Marketplace notifications (ChangePlan, ChangeQuantity, Suspend, Reinstate, Unsubscribe).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, subscriptionId]
+              properties:
+                action:
+                  type: string
+                  enum: [ChangePlan, ChangeQuantity, Suspend, Reinstate, Unsubscribe]
+                subscriptionId:
+                  type: string
+                planId:
+                  type: string
+                quantity:
+                  type: integer
+      responses:
+        '200':
+          description: Webhook acknowledged and processed
+

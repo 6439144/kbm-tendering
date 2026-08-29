@@ -1,0 +1,183 @@
+openapi: 3.0.3
+info:
+  title: KBM Procurement & Tender Management API
+  version: 1.0.0
+  description: Public and internal API contracts for KBM multi-tenant procurement platform.
+servers:
+  - url: http://localhost:3001/api
+    description: Local development modular host
+paths:
+  /requests:
+    post:
+      summary: Submit tender request (Raslni or Manual)
+      operationId: submitRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenderRequestPayload'
+      responses:
+        '201':
+          description: Request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenderRequest'
+  /tenders:
+    get:
+      summary: List tenders
+      operationId: listTenders
+      parameters:
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: vendorId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of tenders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tender'
+    post:
+      summary: Create new tender
+      operationId: createTender
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTenderPayload'
+      responses:
+        '201':
+          description: Tender created
+  /tenders/{id}/eligibility:
+    get:
+      summary: Check vendor eligibility against tender
+      operationId: checkEligibility
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: vendorId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Eligibility calculation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EligibilityResult'
+components:
+  schemas:
+    TenderRequestPayload:
+      type: object
+      required:
+        - tenantId
+        - channel
+        - title
+      properties:
+        tenantId:
+          type: string
+        channel:
+          type: string
+          enum: [raslni, manual_gm_letter]
+        title:
+          type: string
+        department:
+          type: string
+        gmLetterReference:
+          type: string
+        gmLetterAttachmentId:
+          type: string
+    TenderRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        channel:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+    CreateTenderPayload:
+      type: object
+      required:
+        - tenantId
+        - title
+        - activities
+        - gradeRule
+        - priceKwd
+      properties:
+        tenantId:
+          type: string
+        title:
+          type: string
+        referenceNumber:
+          type: string
+        activities:
+          type: array
+          items:
+            type: string
+        gradeRule:
+          type: string
+          enum: [FIRST, SECOND, THIRD, ANY]
+        priceKwd:
+          type: number
+    Tender:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        title:
+          type: string
+        referenceNumber:
+          type: string
+        activities:
+          type: array
+          items:
+            type: string
+        gradeRule:
+          type: string
+        priceKwd:
+          type: number
+        status:
+          type: string
+    EligibilityResult:
+      type: object
+      properties:
+        eligible:
+          type: boolean
+        reasons:
+          type: array
+          items:
+            type: string
+        vendorGrade:
+          type: string
+        requiredGrade:
+          type: string
+        matchedActivities:
+          type: array
+          items:
+            type: string
+

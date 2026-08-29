@@ -1,0 +1,63 @@
+openapi: 3.0.3
+info:
+  title: KBM Workflow & Task Orchestration Engine API
+  version: 1.0.0
+paths:
+  /workflow/templates:
+    get:
+      summary: List available workflow templates (Practices, Tenders)
+      responses:
+        '200':
+          description: List of workflow templates
+  /workflow/instances:
+    post:
+      summary: Start workflow instance from template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [templateId, tenantId, entityId]
+              properties:
+                templateId:
+                  type: string
+                tenantId:
+                  type: string
+                entityId:
+                  type: string
+      responses:
+        '201':
+          description: Instance initialized
+  /workflow/tasks/{id}/transition:
+    post:
+      summary: Transition workflow task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, actorId, role]
+              properties:
+                action:
+                  type: string
+                  enum: [start_review, approve, reject, request_correction, delegate, escalate]
+                actorId:
+                  type: string
+                role:
+                  type: string
+                comment:
+                  type: string
+                delegatedTo:
+                  type: string
+      responses:
+        '200':
+          description: Task transitioned successfully
+

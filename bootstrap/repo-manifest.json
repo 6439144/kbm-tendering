@@ -1,0 +1,28 @@
+{
+  "product": "KBM Procurement & Tender Management Platform",
+  "workspace": "c:/Users/kabed/KBM Tendering",
+  "bootstrapProfile": "zero-cost",
+  "productionProfileRequiresApproval": true,
+  "repositories": [
+    "kbm-platform-ui",
+    "kbm-platform-edge",
+    "kbm-platform-workflow-service",
+    "kbm-platform-procurement-service",
+    "kbm-platform-vendor-service",
+    "kbm-platform-payment-service",
+    "kbm-platform-document-service",
+    "kbm-platform-notification-service",
+    "kbm-platform-integration-service",
+    "kbm-platform-audit-service",
+    "kbm-platform-marketplace-service",
+    "kbm-platform-contracts",
+    "kbm-platform-infrastructure",
+    "kbm-platform-qa",
+    "kbm-platform-docs",
+    "kbm-repo-template"
+  ],
+  "notes": [
+    "The repositories are planned in this workspace as a bootstrap artifact.",
+    "Remote GitHub repository creation is not claimed here unless explicitly performed by the user or by an authorized environment."
+  ]
+}

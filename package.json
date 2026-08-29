@@ -1,0 +1,16 @@
+{
+  "name": "kbm-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KBM Procurement & Tender Management SaaS Platform",
+  "scripts": {
+    "start": "node scripts/start-local.mjs",
+    "api": "node services/procurement-api/server.js",
+    "web": "node services/web/web-server.js",
+    "test": "node --test kbm-platform-workflow-service/workflow-engine.test.js kbm-platform-vendor-service/vendor-manager.test.js kbm-platform-procurement-service/procurement-manager.test.js kbm-platform-payment-service/payment-manager.test.js kbm-platform-document-service/document-manager.test.js kbm-platform-notification-service/notification-manager.test.js kbm-platform-integration-service/integration-adapters.test.js kbm-platform-audit-service/audit-store.test.js kbm-platform-marketplace-service/marketplace-manager.test.js kbm-platform-edge/edge-gateway.test.js services/shared/tenant-policy.test.js services/auth/auth-service.test.js services/web/proxy-router.test.js",
+    "bootstrap:validate": "node scripts/bootstrap-validate.mjs",
+    "smoke": "node scripts/smoke-vertical-slice.mjs",
+    "health": "node scripts/health-check.mjs",
+    "docker:up": "docker compose up --build"
+  }
+}
