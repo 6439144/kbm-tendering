@@ -16,9 +16,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# OS & Editor
+# Temporary and OS files
 .DS_Store
 Thumbs.db
+~$*
 .vscode/
 .idea/
 *.swp
