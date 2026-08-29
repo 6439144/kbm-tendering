@@ -29,7 +29,14 @@ Write-Host "Location:       $Location" -ForegroundColor Yellow
 Write-Host "App Name:       $AppName" -ForegroundColor Yellow
 Write-Host ""
 
-# Check Azure CLI
+# Ensure Azure CLI in current session PATH
+if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
+    $azPath = "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin"
+    if (Test-Path $azPath) {
+        $env:PATH = "$azPath;$env:PATH"
+    }
+}
+
 if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
     Write-Error "Azure CLI ('az') is not installed. Please install it from https://aka.ms/installazurecliwindows"
     exit 1
@@ -97,3 +104,4 @@ Write-Host "  🎉 DEPLOYMENT COMPLETE! KBM PLATFORM IS LIVE ON AZURE 🎉      
 Write-Host "================================================================" -ForegroundColor Green
 Write-Host "Live Web Portal: $webUrl" -ForegroundColor Cyan
 Write-Host "API Health:      $webUrl/health" -ForegroundColor Cyan
+
