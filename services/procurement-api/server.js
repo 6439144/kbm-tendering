@@ -670,7 +670,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.API_PORT || 3001;
 if (require.main === module) {
   server.listen(PORT, () => {
     console.log(`KBM Modular Host running on http://localhost:${PORT}`);
