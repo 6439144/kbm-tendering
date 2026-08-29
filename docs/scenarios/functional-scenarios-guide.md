@@ -342,3 +342,4 @@ All 4 scenarios are verified by 35 native automated tests and an end-to-end mult
 | **Scenario 3 (Eligibility & KNET)** | `procurement-manager.test.js`, `document-manager.test.js`, `tenant-policy.test.js` | `npm test` |
 | **Scenario 4 (35-Step Statutory Workflow)** | `workflow-engine.test.js`, `audit-store.test.js` | `npm test` |
 | **Complete End-to-End Cycle** | 12-step simulated multi-persona lifecycle test | `node scripts/test-complete-cycle.mjs` |
+

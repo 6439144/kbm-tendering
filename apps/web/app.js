@@ -1186,6 +1186,8 @@ async function performLogin(email, password) {
       startGuidedTour();
     }, 400);
 
+    loadStaffTenders();
+    loadWorkflowBoard();
   } catch (err) {
     statusEl.innerText = 'Login failed: ' + err.message;
   }
@@ -1222,6 +1224,193 @@ document.getElementById('link-marketplace-preview').addEventListener('click', (e
     document.querySelector('[data-portal="marketplace"]').click();
   });
 });
+
+// ==========================================
+// MODALS & INTERACTIVE ACTIONS
+// ==========================================
+
+// Generic Modal Closer
+document.querySelectorAll('[data-close]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const modalId = btn.getAttribute('data-close');
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('hidden');
+  });
+});
+
+// Request Intake Modal Open
+const btnOpenRequest = document.getElementById('btn-open-request-modal');
+if (btnOpenRequest) {
+  btnOpenRequest.addEventListener('click', () => {
+    document.getElementById('modal-request-intake').classList.remove('hidden');
+  });
+}
+
+// Request Channel Toggle
+const reqChannel = document.getElementById('req-channel');
+if (reqChannel) {
+  reqChannel.addEventListener('change', (e) => {
+    const scanGroup = document.getElementById('group-gm-scan');
+    if (scanGroup) {
+      scanGroup.style.display = e.target.value === 'manual_gm_letter' ? 'block' : 'none';
+    }
+  });
+}
+
+// Request Intake Form Submit
+const formRequestIntake = document.getElementById('form-request-intake');
+if (formRequestIntake) {
+  formRequestIntake.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const channel = document.getElementById('req-channel').value;
+    const dept = document.getElementById('req-dept').value;
+    const title = document.getElementById('req-title').value;
+    const budget = Number(document.getElementById('req-budget').value);
+    const fileInput = document.getElementById('req-file');
+
+    // Rule Check: FR-012
+    if (channel === 'manual_gm_letter' && (!fileInput.files || fileInput.files.length === 0)) {
+      alert(currentLang === 'ar' 
+        ? '⚠️ خطأ نظام: يشترط إرفاق المسح الضوئي لكتاب المدير العام (FR-012).' 
+        : '⚠️ System Error: Scanned copy of GM letter is mandatory (FR-012).');
+      return;
+    }
+
+    try {
+      const res = await apiCall('/api/requests', 'POST', {
+        tenantId: 'tenant-moi',
+        channel,
+        title,
+        titleAr: title,
+        requestingDepartment: dept,
+        requestingDepartmentAr: dept,
+        gmLetterReference: channel === 'manual_gm_letter' ? `GM-${Date.now().toString().slice(-4)}` : null,
+        gmLetterAttachmentId: channel === 'manual_gm_letter' ? `doc-scan-${Date.now()}` : null,
+        raslniMessageId: channel === 'raslni' ? `raslni-${Date.now()}` : null,
+        estimatedBudgetKwd: budget
+      });
+
+      document.getElementById('modal-request-intake').classList.add('hidden');
+      alert(currentLang === 'ar' 
+        ? `✅ تم تسجيل طلب المناقصة بنجاح برقم: ${res.id}\nتم توثيق العملية في سجل التدقيق الرقمي (SHA-256).` 
+        : `✅ Tender request registered successfully with ID: ${res.id}\nAudit event logged with SHA-256 hash chaining.`);
+      
+      const kpiReqs = document.getElementById('kpi-active-reqs');
+      if (kpiReqs) kpiReqs.innerText = Number(kpiReqs.innerText || 0) + 1;
+      
+      loadAuditLog();
+      loadNotifications();
+    } catch (err) {
+      alert('Request error: ' + err.message);
+    }
+  });
+}
+
+// Create Tender Modal Open
+const btnOpenTender = document.getElementById('btn-open-tender-modal');
+if (btnOpenTender) {
+  btnOpenTender.addEventListener('click', () => {
+    document.getElementById('modal-create-tender').classList.remove('hidden');
+  });
+}
+
+// Create Tender Form Submit
+const formCreateTender = document.getElementById('form-create-tender');
+if (formCreateTender) {
+  formCreateTender.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = document.getElementById('tender-title').value;
+    const activity = document.getElementById('tender-activity').value;
+    const grade = document.getElementById('tender-grade').value;
+    const price = Number(document.getElementById('tender-price').value);
+
+    try {
+      const res = await apiCall('/api/tenders', 'POST', {
+        tenantId: 'tenant-moi',
+        referenceNumber: `MOI/TNT/2026/00${Math.floor(Math.random() * 90) + 10}`,
+        title,
+        titleAr: title,
+        description: 'Approved tender specifications and terms booklet.',
+        descriptionAr: 'كراسة الشروط والمواصفات الفنية المعتمدة رسمياً.',
+        activities: [activity],
+        gradeRule: grade,
+        gradeMatchMode: grade === 'ANY' ? 'ANY' : 'GRADE_AND_ABOVE',
+        priceKwd: price
+      });
+
+      document.getElementById('modal-create-tender').classList.add('hidden');
+      alert(currentLang === 'ar' 
+        ? `🎉 تم إنشاء وطرح المناقصة بنجاح برقم: ${res.referenceNumber}\nأصبحت المناقصة متاحة للموردين المؤهلين حسب النشاط والدرجة.` 
+        : `🎉 Tender created & published successfully with Ref: ${res.referenceNumber}`);
+      
+      loadStaffTenders();
+      loadVendorTenders();
+      loadAuditLog();
+      loadNotifications();
+    } catch (err) {
+      alert('Tender creation error: ' + err.message);
+    }
+  });
+}
+
+// Open Task Review Modal
+window.openTaskReviewModal = function(taskId, taskName, role, sla) {
+  document.getElementById('task-review-id').value = taskId;
+  document.getElementById('task-review-task-name').innerText = taskName;
+  document.getElementById('task-review-badge-role').innerText = role;
+  document.getElementById('task-review-badge-sla').innerText = `SLA: ${sla}`;
+  document.getElementById('modal-task-review').classList.remove('hidden');
+};
+
+// Task Review Form Submit
+const formTaskReview = document.getElementById('form-task-review');
+if (formTaskReview) {
+  formTaskReview.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const taskId = document.getElementById('task-review-id').value;
+    const decision = document.querySelector('input[name="task_decision"]:checked').value;
+    const comment = document.getElementById('task-review-comment').value || (decision === 'APPROVE' ? 'Approved in live review' : 'Correction requested');
+
+    try {
+      await apiCall(`/api/workflow/tasks/${taskId}/transition`, 'POST', {
+        action: decision,
+        actorId: currentUser.id,
+        role: currentUser.role,
+        comment
+      });
+
+      document.getElementById('modal-task-review').classList.add('hidden');
+      alert(currentLang === 'ar' 
+        ? `✅ تم تنفيذ القرار (${decision === 'APPROVE' ? 'اعتماد الخطوة' : 'إعادة للتعديل'}) بنجاح وتوثيقه بسجل التدقيق الرقمي.` 
+        : `✅ Workflow transition executed successfully (${decision}).`);
+
+      if (currentWorkflowInstance) {
+        currentWorkflowInstance = await apiCall(`/api/workflow/instances/${currentWorkflowInstance.id}`);
+        loadWorkflowBoard(currentWorkflowInstance.templateCode);
+      }
+      loadAuditLog();
+      loadNotifications();
+    } catch (err) {
+      alert('Transition error: ' + err.message);
+    }
+  });
+}
+
+// Interactive Lifecycle Advance Demo Button
+window.advanceJourneyDemo = function() {
+  if (journeyCurrentStageIndex < JOURNEY_STAGES.length - 1) {
+    journeyCurrentStageIndex++;
+    renderJourneyVisualizer();
+    if (journeyCurrentStageIndex === JOURNEY_STAGES.length - 1) {
+      alert(currentLang === 'ar' 
+        ? '🏆 تم الوصول للمرحلة النهائية: ديوان المحاسبة وتوقيع العقد 100% من سعادة وكيل الوزارة!' 
+        : '🏆 Final statutory stage reached: State Audit Bureau pre-audit approved & 100% Contract signed by Undersecretary!');
+    }
+  } else {
+    journeyCurrentStageIndex = 0;
+    renderJourneyVisualizer();
+  }
+};
 
 // Initialization
 setLanguage('ar');

@@ -652,6 +652,54 @@
       </div>
     </div>
 
+    <!-- Modal 2B: Interactive Task Review & Statutory Approval Modal -->
+    <div id="modal-task-review" class="modal-overlay hidden">
+      <div class="modal-dialog">
+        <div class="modal-header" style="background:var(--primary); color:white;">
+          <div>
+            <h3 style="color:white; font-size:1.1rem;" id="task-review-modal-title">اعتماد ومراجعة الخطوة الإجرائية</h3>
+            <small style="color:#bfdbfe;" id="task-review-modal-subtitle">دورة التدقيق والاعتماد وفق القانون 49/2016</small>
+          </div>
+          <button class="modal-close" style="color:white;" data-close="modal-task-review">✕</button>
+        </div>
+        <form id="form-task-review">
+          <input type="hidden" id="task-review-id" value="" />
+          <div class="modal-body">
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:0.85rem; border-radius:8px; margin-bottom:1rem;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span class="badge badge-primary" id="task-review-badge-role">ROLE_PURCHASE_COMMITTEE</span>
+                <span class="badge badge-outline" id="task-review-badge-sla">SLA: 14 Days</span>
+              </div>
+              <strong id="task-review-task-name" style="color:var(--text-main); font-size:0.95rem; display:block; margin-top:4px;">مراجعة لجنة الشراء واعتماد الكراسة</strong>
+            </div>
+
+            <div class="form-group">
+              <label><strong>قرار الاعتماد الإجرائي (Approval Decision):</strong></label>
+              <div style="display:flex; gap:1rem; margin-top:6px;">
+                <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer;">
+                  <input type="radio" name="task_decision" value="APPROVE" checked />
+                  <span style="color:#16a34a; font-weight:700;">✓ اعتماد الخطوة (Approve)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer;">
+                  <input type="radio" name="task_decision" value="REQUEST_CORRECTION" />
+                  <span style="color:#d97706; font-weight:700;">↩️ طلب استيفاء / تعديل (Return for Correction)</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>ملاحظات الاعتماد والتوجيهات (Decision Notes):</label>
+              <textarea id="task-review-comment" class="form-control" rows="3" placeholder="تمت المراجعة والتحقق من استيفاء جميع الشروط واللوائح الفنية والمالية."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-close="modal-task-review">إلغاء</button>
+            <button type="submit" class="btn btn-success" id="btn-submit-task-review">تأكيد وتنفيذ القرار الإجرائي ✓</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Modal 3: Secure Watermarked Tender Document Viewer -->
     <div id="modal-doc-viewer" class="modal-overlay hidden">
       <div class="modal-dialog modal-lg">
