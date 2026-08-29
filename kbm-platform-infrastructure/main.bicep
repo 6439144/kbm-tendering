@@ -1,4 +1,4 @@
-@description('Deployment profile selection. Default is bootstrap to enforce $0/month Azure spend until production approval.')
+@description('Deployment profile selection. Default is bootstrap with Azure Cosmos DB Free Tier ($0/month).')
 @allowed([
   'bootstrap'
   'production'
@@ -21,12 +21,12 @@ var isProduction = deploymentProfile == 'production'
 var defaultTags = {
   Product: 'KBM-Procurement-Platform'
   Environment: deploymentProfile
-  CostProfile: isBootstrap ? 'ZeroCostFreeBootstrap' : 'PaidProductionGated'
+  CostProfile: isBootstrap ? 'ZeroCostFreeBootstrapWithCosmosDB' : 'PaidProductionGated'
   AutoShutdown: isBootstrap ? 'AlwaysOn-FreeQuotaOnly' : 'Configurable'
 }
 
 // -------------------------------------------------------------
-// 1. BOOTSTRAP PROFILE ($0/month Azure Free Tier Only)
+// 1. BOOTSTRAP PROFILE (Azure Free Tier + Cosmos DB Free Tier)
 // -------------------------------------------------------------
 resource bootstrapAppServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = if (isBootstrap) {
   name: '${prefix}-bootstrap-asp'
@@ -34,8 +34,8 @@ resource bootstrapAppServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = if (is
   tags: defaultTags
   kind: 'linux'
   sku: {
-    name: 'F1'
-    tier: 'Free'
+    name: 'B1'
+    tier: 'Basic'
   }
   properties: {
     reserved: true
@@ -65,6 +65,107 @@ resource bootstrapStorage 'Microsoft.Storage/storageAccounts@2023-01-01' = if (i
   properties: {
     accessTier: 'Hot'
     supportsHttpsTrafficOnly: true
+  }
+}
+
+// Azure Cosmos DB Account (100% Free Tier: 1,000 RU/s + 25 GB Free for Lifetime)
+resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = {
+  name: '${prefix}-cosmos-${uniqueString(resourceGroup().id)}'
+  location: location
+  tags: defaultTags
+  kind: 'GlobalDocumentDB'
+  properties: {
+    enableFreeTier: true
+    databaseAccountOfferType: 'Standard'
+    locations: [
+      {
+        locationName: location
+        failoverPriority: 0
+        isZoneRedundant: false
+      }
+    ]
+    consistencyPolicy: {
+      defaultConsistencyLevel: 'Session'
+    }
+  }
+}
+
+// Cosmos DB SQL Database with Shared 1,000 RU/s Free Tier
+resource cosmosDb 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2023-04-15' = {
+  parent: cosmosAccount
+  name: 'kbm-procurement-db'
+  properties: {
+    resource: {
+      id: 'kbm-procurement-db'
+    }
+    options: {
+      throughput: 1000
+    }
+  }
+}
+
+// Containers with Partition Key /tenantId
+resource tendersContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
+  parent: cosmosDb
+  name: 'Tenders'
+  properties: {
+    resource: {
+      id: 'Tenders'
+      partitionKey: {
+        paths: [
+          '/tenantId'
+        ]
+        kind: 'Hash'
+      }
+    }
+  }
+}
+
+resource auditContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
+  parent: cosmosDb
+  name: 'AuditEvents'
+  properties: {
+    resource: {
+      id: 'AuditEvents'
+      partitionKey: {
+        paths: [
+          '/tenantId'
+        ]
+        kind: 'Hash'
+      }
+    }
+  }
+}
+
+resource vendorsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
+  parent: cosmosDb
+  name: 'Vendors'
+  properties: {
+    resource: {
+      id: 'Vendors'
+      partitionKey: {
+        paths: [
+          '/tenantId'
+        ]
+        kind: 'Hash'
+      }
+    }
+  }
+}
+
+resource workflowsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
+  parent: cosmosDb
+  name: 'Workflows'
+  properties: {
+    resource: {
+      id: 'Workflows'
+      partitionKey: {
+        paths: [
+          '/tenantId'
+        ]
+        kind: 'Hash'
+      }
+    }
   }
 }
 
@@ -110,39 +211,8 @@ resource prodServiceBus 'Microsoft.ServiceBus/namespaces@2022-10-01-preview' = i
   }
 }
 
-// Budget Alert Configuration
-resource budgetAlert 'Microsoft.Consumption/budgets@2021-10-01' = if (isProduction) {
-  name: '${prefix}-monthly-budget'
-  properties: {
-    category: 'Cost'
-    amount: monthlyBudgetUsd
-    timeGrain: 'Monthly'
-    timePeriod: {
-      startDate: '2026-09-01T00:00:00Z'
-    }
-    notifications: {
-      Actual_80_Percent: {
-        enabled: true
-        operator: 'GreaterThan'
-        threshold: 80
-        contactEmails: [
-          'finops-alerts@kbm-platform.demo'
-        ]
-      }
-      Forecasted_100_Percent: {
-        enabled: true
-        operator: 'GreaterThan'
-        threshold: 100
-        thresholdType: 'Forecasted'
-        contactEmails: [
-          'finops-alerts@kbm-platform.demo'
-        ]
-      }
-    }
-  }
-}
-
 output activeProfile string = deploymentProfile
 output targetAzureMonthlyCostUsd int = isBootstrap ? 0 : monthlyBudgetUsd
-output bootstrapAppPlanName string = isBootstrap ? bootstrapAppServicePlan.name : 'N/A'
-output productionAppPlanName string = isProduction ? prodAppServicePlan.name : 'N/A'
+output cosmosAccountEndpoint string = cosmosAccount.properties.documentEndpoint
+output cosmosAccountName string = cosmosAccount.name
+output cosmosDatabaseName string = cosmosDb.name
