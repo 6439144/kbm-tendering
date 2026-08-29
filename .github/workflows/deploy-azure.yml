@@ -41,3 +41,4 @@ jobs:
           name: kbm-platform-build
           path: kbm-deploy.zip
           retention-days: 7
+

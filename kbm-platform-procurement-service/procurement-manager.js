@@ -20,20 +20,16 @@ class ProcurementManager {
 
   submitRequest({
     tenantId,
-    channel, // 'raslni' or 'manual_gm_letter'
+    channel = 'manual_gm_letter', // 'raslni' or 'manual_gm_letter'
     title,
     titleAr,
     requestingDepartment,
     requestingDepartmentAr,
     gmLetterReference = null,
-    gmLetterAttachmentId = null,
+    gmLetterAttachmentId = null, // Optional attachment
     raslniMessageId = null,
     estimatedBudgetKwd = 0
   }) {
-    if (channel === 'manual_gm_letter' && !gmLetterAttachmentId) {
-      throw new Error('Mandatory scanned GM letter attachment is required for manual request intake');
-    }
-
     const requestId = `req-${crypto.randomUUID().slice(0, 8)}`;
     const request = {
       id: requestId,
@@ -54,6 +50,16 @@ class ProcurementManager {
 
     this.requests.set(requestId, request);
     return request;
+  }
+
+  listRequests({ tenantId = null } = {}) {
+    const list = Array.from(this.requests.values());
+    if (!tenantId) return list;
+    return list.filter(r => r.tenantId === tenantId);
+  }
+
+  getRequest(requestId) {
+    return this.requests.get(requestId);
   }
 
   createTender({

@@ -93,6 +93,30 @@ const t2 = procurementManager.createTender({
   priceKwd: 150
 });
 
+// Seed sample tender requests
+procurementManager.submitRequest({
+  tenantId: TENANT_ID,
+  channel: 'manual_gm_letter',
+  title: 'Ministry Core IT Infrastructure & Cloud Integration',
+  titleAr: 'تحديث البنية التحتية لتكنولوجيا ونظم المعلومات والربط السحابي',
+  requestingDepartment: 'Information Systems Center',
+  requestingDepartmentAr: 'إدارة مركز نظم المعلومات',
+  gmLetterReference: 'GM/2026/884',
+  gmLetterAttachmentId: 'doc-scan-01',
+  estimatedBudgetKwd: 180000
+});
+
+procurementManager.submitRequest({
+  tenantId: TENANT_ID,
+  channel: 'raslni',
+  title: 'Perimeter Surveillance Cameras & Radar Defense',
+  titleAr: 'صيانة وتوريد أنظمة الرادارات والمراقبة الأمنية وكاميرات CCTV',
+  requestingDepartment: 'General Directorate of Border Security',
+  requestingDepartmentAr: 'الإدارة العامة لأمن الحدود',
+  raslniMessageId: 'raslni-msg-9921',
+  estimatedBudgetKwd: 240000
+});
+
 // Seed sample workflow instances
 const wfInstance = workflowEngine.startWorkflow({
   templateCode: 'PRACTICES',
@@ -434,6 +458,12 @@ const server = http.createServer(async (req, res) => {
       const vendor = vendorId ? vendorManager.getVendor(vendorId) : null;
       const tenders = procurementManager.listTenders({ tenantId, vendor });
       return sendJson(res, 200, tenders);
+    }
+
+    if (req.method === 'GET' && pathname === '/api/requests') {
+      const tenantId = url.searchParams.get('tenantId') || TENANT_ID;
+      const requests = procurementManager.listRequests({ tenantId });
+      return sendJson(res, 200, requests);
     }
 
     if (req.method === 'POST' && pathname === '/api/requests') {

@@ -181,6 +181,43 @@
           </div>
 
           <!-- ========================================================= -->
+          <!-- TENDER REQUESTS INTAKE QUEUE TABLE                        -->
+          <!-- ========================================================= -->
+          <div class="panel-box" id="panel-tender-requests" style="margin-bottom:1.5rem;">
+            <div class="panel-header" style="flex-wrap:wrap; gap:1rem;">
+              <div>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <span class="pulsating-dot"></span>
+                  <h3 style="font-size:1.15rem; color:var(--text-main);">سجل طلبات المناقصات الواردة (Tender Requests Queue)</h3>
+                </div>
+                <small class="text-muted">الطلبات الواردة من القطاعات والإدارات الحكومية (عبر نظام رسلني أو الكتب الرسمية)</small>
+              </div>
+              <button class="btn btn-primary" id="btn-open-request-modal-secondary" onclick="document.getElementById('modal-request-intake').classList.remove('hidden')">
+                + تسجيل طلب مناقصة جديد
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>رقم الطلب (Request ID)</th>
+                    <th>موضوع الطلب والإدارة الطالبة</th>
+                    <th>قناة الورود</th>
+                    <th>الميزانية التقديرية</th>
+                    <th>المرفقات (Attachments)</th>
+                    <th>حالة الطلب</th>
+                    <th>الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="staff-requests-tbody">
+                  <!-- Rendered dynamically via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ========================================================= -->
           <!-- VISUAL TENDER LIFECYCLE & JOURNEY TRACKER                 -->
           <!-- ========================================================= -->
           <div class="journey-visualizer-container" id="tour-journey-visualizer">
@@ -312,7 +349,7 @@
             </div>
           </div>
 
-          <!-- JAGGAER-Style Enterprise Sourcing Events Console -->
+          <!-- Enterprise Sourcing Events Console -->
           <div class="panel-box" id="tour-tenders-table">
             <div class="panel-header" style="flex-wrap:wrap; gap:1rem;">
               <div>
@@ -320,7 +357,7 @@
                   <span class="pulsating-dot"></span>
                   <h3 data-i18n="tendersCatalogStaff" style="font-size:1.15rem; color:var(--text-main);">سجل إدارة وعمليات المناقصات والممارسات (Sourcing Events Console)</h3>
                 </div>
-                <small class="text-muted">نظام إدارة العطاءات، المظاريف الفنية والمالية، ومسارات الرقابة المسبقة (JAGGAER Enterprise Edition)</small>
+                <small class="text-muted">نظام إدارة العطاءات، المظاريف الفنية والمالية، ومسارات الرقابة المسبقة (KBM Enterprise Edition)</small>
               </div>
               <button class="btn btn-primary" id="btn-open-tender-modal" data-i18n="btnPublishTender" style="box-shadow:var(--shadow-md);">
                 <span>✨</span>
@@ -359,7 +396,7 @@
                   </tr>
                 </thead>
                 <tbody id="staff-tenders-tbody">
-                  <!-- Rendered dynamically via JS with JAGGAER-style cards -->
+                  <!-- Rendered dynamically via JS -->
                 </tbody>
               </table>
             </div>
@@ -606,7 +643,7 @@
             <div class="form-group">
               <label data-i18n="labelIntakeChannel">قناة ورود الطلب:</label>
               <select id="req-channel" class="form-select" required>
-                <option value="manual_gm_letter">كتاب رسمي من مدير عام الإدارة (يدوي مع مسح ضوئي إلزامي)</option>
+                <option value="manual_gm_letter">كتاب رسمي من مدير عام الإدارة (ورقي / يدوي)</option>
                 <option value="raslni">مراسلة إلكترونية عبر نظام رسلني (Raslni G2G)</option>
               </select>
             </div>
@@ -623,9 +660,9 @@
               <input type="number" id="req-budget" value="180000" required />
             </div>
             <div class="form-group" id="group-gm-scan">
-              <label data-i18n="labelScanAttachment">مرفق المسح الضوئي لكتاب المدير العام (إلزامي):</label>
+              <label data-i18n="labelScanAttachment">مرفق المسح الضوئي لكتاب المدير العام (اختياري - Optional):</label>
               <input type="file" id="req-file" class="form-control" />
-              <small class="text-muted">ملاحظة: النظام يشترط وجود المرفق لقبول تسجيل الطلب اليدوي (FR-012).</small>
+              <small class="text-muted">ملاحظة: يمكنك إرفاق نسخة المسح الضوئي للكتاب أو استكمال تسجيل الطلب بدون مرفق.</small>
             </div>
           </div>
           <div class="modal-footer">
@@ -636,7 +673,7 @@
       </div>
     </div>
 
-    <!-- Modal 2: JAGGAER-Style Sourcing Event & Tender Studio -->
+    <!-- Modal 2: Enterprise Sourcing Event & Tender Studio -->
     <div id="modal-create-tender" class="modal-overlay hidden">
       <div class="modal-dialog modal-xl">
         <div class="modal-header" style="background:linear-gradient(135deg, #1e3a8a, #1d4ed8); color:white;">
@@ -645,7 +682,7 @@
               <span style="font-size:1.2rem;">🏛️</span>
               <h3 style="color:white; font-size:1.15rem;">استوديو إنشاء وطرح المناقصات والممارسات (Sourcing Studio)</h3>
             </div>
-            <small style="color:#bfdbfe;">بوابة إعداد كراسات الشروط، المظاريف الفنية والمالية، ومعايير التأهيل (JAGGAER One Platform)</small>
+            <small style="color:#bfdbfe;">بوابة إعداد كراسات الشروط، المظاريف الفنية والمالية، ومعايير التأهيل (KBM Enterprise Platform)</small>
           </div>
           <button class="modal-close" style="color:white;" data-close="modal-create-tender">✕</button>
         </div>
@@ -902,7 +939,7 @@
       </div>
     </div>
 
-    <!-- Modal 2C: JAGGAER-Style Sourcing Dossier & Envelope Inspector Modal -->
+    <!-- Modal 2C: Sourcing Dossier & Envelope Inspector Modal -->
     <div id="modal-tender-details" class="modal-overlay hidden">
       <div class="modal-dialog modal-lg">
         <div class="modal-header" style="background:#0f172a; color:white;">
@@ -921,7 +958,7 @@
       </div>
     </div>
 
-    <!-- Modal 2D: JAGGAER-Style Two-Envelope Evaluation & Scoring Matrix Modal -->
+    <!-- Modal 2D: Two-Envelope Evaluation & Scoring Matrix Modal -->
     <div id="modal-evaluation-matrix" class="modal-overlay hidden">
       <div class="modal-dialog modal-lg">
         <div class="modal-header" style="background:linear-gradient(135deg, #0f766e, #0d9488); color:white;">
@@ -930,7 +967,7 @@
               <span style="font-size:1.2rem;">⚖️</span>
               <h3 style="color:white; font-size:1.15rem;">مصفوفة تقييم وفض العطاءات الفنية والمالية (Evaluation & Scoring Matrix)</h3>
             </div>
-            <small style="color:#ccfbf1;">نظام فض المظاريف المشفرة وتوافق لجان التقييم (JAGGAER Consensus Scoring Engine)</small>
+            <small style="color:#ccfbf1;">نظام فض المظاريف المشفرة وتوافق لجان التقييم (KBM Consensus Scoring Engine)</small>
           </div>
           <button class="modal-close" style="color:white;" data-close="modal-evaluation-matrix">✕</button>
         </div>

@@ -8,19 +8,20 @@ import { AuditStore } from '../kbm-platform-audit-service/audit-store.js';
 describe('Tender Registration & Approval QA Suite', () => {
   const TENANT_ID = 'tenant-moi-qa';
 
-  it('QA-01: Rejects manual tender request if mandatory scanned GM letter is missing (FR-012)', () => {
+  it('QA-01: Successfully accepts manual tender request when attachment is optional/omitted', () => {
     const procurement = new ProcurementManager();
-    assert.throws(() => {
-      procurement.submitRequest({
-        tenantId: TENANT_ID,
-        channel: 'manual_gm_letter',
-        title: 'Hardware Expansion',
-        titleAr: 'توسعة الخوادم',
-        requestingDepartment: 'IT Systems',
-        gmLetterReference: 'GM/2026/991',
-        gmLetterAttachmentId: null // Missing mandatory scan
-      });
-    }, /Mandatory scanned GM letter/);
+    const req = procurement.submitRequest({
+      tenantId: TENANT_ID,
+      channel: 'manual_gm_letter',
+      title: 'Hardware Expansion',
+      titleAr: 'توسعة الخوادم',
+      requestingDepartment: 'IT Systems',
+      gmLetterReference: 'GM/2026/991',
+      gmLetterAttachmentId: null // Optional scan omitted
+    });
+    assert.ok(req.id);
+    assert.equal(req.status, 'SUBMITTED');
+    assert.equal(req.gmLetterAttachmentId, null);
   });
 
   it('QA-02: Successfully accepts manual tender request with valid scanned GM letter attachment', () => {

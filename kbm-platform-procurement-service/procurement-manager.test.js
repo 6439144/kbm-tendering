@@ -19,16 +19,18 @@ test('submits manual tender request with mandatory scanned GM letter', () => {
   assert.equal(req.gmLetterAttachmentId, 'doc-gm-scan-881.pdf');
 });
 
-test('rejects manual request if scanned GM letter attachment is missing', () => {
+test('submits manual request smoothly when attachment is optional/omitted', () => {
   const manager = new ProcurementManager();
-  assert.throws(() => {
-    manager.submitRequest({
-      tenantId: 'tenant-moi',
-      channel: 'manual_gm_letter',
-      title: 'Missing Scan Request',
-      requestingDepartment: 'Logistics'
-    });
-  }, /Mandatory scanned GM letter attachment is required/);
+  const req = manager.submitRequest({
+    tenantId: 'tenant-moi',
+    channel: 'manual_gm_letter',
+    title: 'Optional Scan Request',
+    requestingDepartment: 'Logistics'
+  });
+
+  assert.ok(req.id);
+  assert.equal(req.status, 'SUBMITTED');
+  assert.equal(req.gmLetterAttachmentId, null);
 });
 
 test('evaluates eligibility: matches activity overlap and grade hierarchy', () => {

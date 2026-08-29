@@ -1151,6 +1151,7 @@ async function performLogin(email, password) {
 
     renderJourneyVisualizer();
 
+    loadStaffRequests();
     loadStaffTenders();
     loadWorkflowBoard();
   } catch (err) {
@@ -1189,7 +1190,117 @@ window.showToast = function(message, type = 'success', duration = 4000) {
 };
 
 // ==========================================
-// JAGGAER SOURCING EVENTS CATALOG & TABLE
+// TENDER REQUESTS INTAKE QUEUE
+// ==========================================
+let cachedStaffRequests = [];
+
+function renderStaffRequestsTable() {
+  const tbody = document.getElementById('staff-requests-tbody');
+  if (!tbody) return;
+
+  if (cachedStaffRequests.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">
+          <span style="font-size:1.8rem; display:block; margin-bottom:0.4rem;">📥</span>
+          ${currentLang === 'ar' ? 'لا توجد طلبات مناقصات مسجلة حالياً' : 'No tender requests registered in queue'}
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  const isAr = currentLang === 'ar';
+  tbody.innerHTML = cachedStaffRequests.map(r => {
+    const channelBadge = r.channel === 'raslni' 
+      ? `<span class="badge badge-info">📨 ${isAr ? 'رسلني الإلكتروني' : 'Raslni G2G'}</span>`
+      : `<span class="badge badge-outline">📄 ${isAr ? 'كتاب رسمي يدوي' : 'Official Letter'}</span>`;
+    
+    const attachBadge = r.gmLetterAttachmentId 
+      ? `<span class="badge badge-success">📎 ${isAr ? 'مرفق متوفر' : 'Attached'}</span>`
+      : `<span class="badge badge-outline" style="color:var(--text-muted);">ـ ${isAr ? 'بدون مرفق' : 'None'}</span>`;
+
+    const statusBadge = r.status === 'SUBMITTED'
+      ? `<span class="badge badge-primary">● ${isAr ? 'جديد / قيد المراجعة' : 'Submitted'}</span>`
+      : `<span class="badge badge-success">✓ ${isAr ? 'معتمد' : 'Approved'}</span>`;
+
+    const budgetFmt = Number(r.estimatedBudgetKwd || 0).toLocaleString();
+
+    return `
+      <tr class="${r._isNew ? 'row-newly-added' : ''}">
+        <td>
+          <div style="display:flex; align-items:center;">
+            <span class="pulsating-dot"></span>
+            <strong>${r.id}</strong>
+          </div>
+          <small class="text-muted" style="font-size:0.75rem;">${r.createdAt ? new Date(r.createdAt).toLocaleDateString(isAr ? 'ar-KW' : 'en-US') : ''}</small>
+        </td>
+        <td>
+          <strong style="color:var(--text-main); font-size:0.9rem; display:block;">${isAr ? (r.titleAr || r.title) : r.title}</strong>
+          <small style="color:var(--text-muted); font-size:0.78rem;">🏛️ ${isAr ? (r.requestingDepartmentAr || r.requestingDepartment) : r.requestingDepartment}</small>
+        </td>
+        <td>${channelBadge}</td>
+        <td><strong style="color:var(--primary); font-size:0.92rem;">${budgetFmt} د.ك</strong></td>
+        <td>${attachBadge}</td>
+        <td>${statusBadge}</td>
+        <td>
+          <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+            <button class="btn btn-sm btn-primary" onclick="convertRequestToTender('${r.id}')" title="تحويل الطلب إلى مناقصة">
+              🚀 ${isAr ? 'تحويل لمناقصة' : 'To Tender'}
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function loadStaffRequests() {
+  try {
+    const list = await apiCall('/api/requests?tenantId=tenant-moi');
+    cachedStaffRequests = list;
+    const kpiReqs = document.getElementById('kpi-active-reqs');
+    if (kpiReqs) kpiReqs.innerText = list.length;
+    renderStaffRequestsTable();
+  } catch (err) {
+    console.error('Failed loading staff requests:', err);
+  }
+}
+
+// Convert Request to Tender
+window.convertRequestToTender = function(requestId) {
+  const req = cachedStaffRequests.find(r => r.id === requestId);
+  if (!req) return;
+
+  const randomRefNum = Math.floor(Math.random() * 900) + 100;
+  const refInput = document.getElementById('tender-ref-number');
+  if (refInput) refInput.value = `MOI/TNT/2026/${randomRefNum}`;
+
+  const titleAr = document.getElementById('tender-title-ar');
+  if (titleAr) titleAr.value = req.titleAr || req.title;
+
+  const titleEn = document.getElementById('tender-title-en');
+  if (titleEn) titleEn.value = req.title || req.titleAr;
+
+  const dept = document.getElementById('tender-dept');
+  if (dept) dept.value = req.requestingDepartmentAr || req.requestingDepartment;
+
+  const budget = document.getElementById('tender-budget');
+  if (budget) budget.value = req.estimatedBudgetKwd || 180000;
+
+  goToWizardStep(1);
+  document.getElementById('modal-create-tender').classList.remove('hidden');
+
+  showToast(
+    currentLang === 'ar'
+      ? `📋 تم استيراد بيانات الطلب (${req.id}) بنجاح إلى استوديو طرح المناقصات.`
+      : `📋 Request ${req.id} data loaded into Sourcing Studio.`,
+    'info'
+  );
+};
+
+// ==========================================
+// ENTERPRISE SOURCING EVENTS CATALOG & TABLE
 // ==========================================
 let cachedStaffTenders = [];
 let activeStaffFilter = 'ALL';
@@ -1423,7 +1534,7 @@ if (searchInput) {
 }
 
 // ==========================================
-// JAGGAER 5-STEP SOURCING STUDIO CONTROLLER
+// 5-STEP SOURCING STUDIO CONTROLLER
 // ==========================================
 let currentWizardStep = 1;
 
@@ -1636,20 +1747,10 @@ if (formRequestIntake) {
     e.preventDefault();
     const channel = document.getElementById('req-channel').value;
     const dept = document.getElementById('req-dept').value;
-    const title = document.getElementById('req-title').value;
-    const budget = Number(document.getElementById('req-budget').value);
-    const fileInput = document.getElementById('req-file');
-
-    // Rule Check: FR-012
-    if (channel === 'manual_gm_letter' && (!fileInput.files || fileInput.files.length === 0)) {
-      showToast(
-        currentLang === 'ar' 
-          ? '⚠️ خطأ نظام: يشترط إرفاق المسح الضوئي لكتاب المدير العام (FR-012).' 
-          : '⚠️ System Error: Scanned copy of GM letter is mandatory (FR-012).',
-        'warning'
-      );
-      return;
-    }
+    // Optional attachment
+    const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+    const attachmentId = hasFile ? `doc-scan-${Date.now()}` : null;
+    const gmRef = channel === 'manual_gm_letter' ? `GM-${Date.now().toString().slice(-4)}` : null;
 
     try {
       const res = await apiCall('/api/requests', 'POST', {
@@ -1659,22 +1760,28 @@ if (formRequestIntake) {
         titleAr: title,
         requestingDepartment: dept,
         requestingDepartmentAr: dept,
-        gmLetterReference: channel === 'manual_gm_letter' ? `GM-${Date.now().toString().slice(-4)}` : null,
-        gmLetterAttachmentId: channel === 'manual_gm_letter' ? `doc-scan-${Date.now()}` : null,
+        gmLetterReference: gmRef,
+        gmLetterAttachmentId: attachmentId,
         raslniMessageId: channel === 'raslni' ? `raslni-${Date.now()}` : null,
         estimatedBudgetKwd: budget
       });
 
+      // Mark newly added request for row highlight
+      res._isNew = true;
+      cachedStaffRequests.unshift(res);
+
       document.getElementById('modal-request-intake').classList.add('hidden');
+      renderStaffRequestsTable();
+
+      const kpiReqs = document.getElementById('kpi-active-reqs');
+      if (kpiReqs) kpiReqs.innerText = cachedStaffRequests.length;
+
       showToast(
         currentLang === 'ar' 
-          ? `✅ تم تسجيل طلب المناقصة بنجاح برقم: ${res.id}\nتم توثيق العملية في سجل التدقيق الرقمي (SHA-256).` 
+          ? `✅ تم تسجيل طلب المناقصة بنجاح برقم: ${res.id}\nأصبح متاحاً في جدول طلبات المناقصات ويمكن تحويله لمناقصة مطروحة.` 
           : `✅ Tender request registered successfully with ID: ${res.id}`,
         'success'
       );
-      
-      const kpiReqs = document.getElementById('kpi-active-reqs');
-      if (kpiReqs) kpiReqs.innerText = Number(kpiReqs.innerText || 0) + 1;
       
       loadAuditLog();
       loadNotifications();
