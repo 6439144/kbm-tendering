@@ -249,27 +249,31 @@ def build_document():
     # -------------------------------------------------------------
     # 7. DATABASE & PERSISTENCE ARCHITECTURE
     # -------------------------------------------------------------
-    h6 = doc.add_heading("6. Database & Persistence Architecture", level=1)
+    h6 = doc.add_heading("6. Database & Persistence Architecture (Azure Cosmos DB Free Tier)", level=1)
     h6.paragraph_format.space_before = Pt(18)
     for run in h6.runs:
         run.font.name = "Arial"
         run.font.color.rgb = RGBColor(30, 58, 138)
 
     doc.add_paragraph(
-        "The KBM platform supports two distinct persistence profiles depending on the deployment lifecycle stage:"
+        "The KBM platform utilizes Azure Cosmos DB Free Tier (enableFreeTier: true) providing 1,000 RU/s throughput "
+        "and 25 GB storage free for the lifetime of the Azure subscription at $0.00/month:"
     )
 
-    db_headers = ["Feature Dimension", "Zero-Cost Bootstrap Profile ($0/mo)", "Enterprise Production Profile"]
+    db_headers = ["Cosmos DB Container", "Partition Key", "Data Managed & Stored", "Cryptographic / Consistency Model"]
     db_data = [
-        ["Primary Database", "In-Memory Cryptographic Store + Azure Storage Account", "Azure Cosmos DB (NoSQL API, Multi-Region Active)"],
-        ["Partitioning Strategy", "Logical Tenant Isolation (tenantId scoping)", "Physical Partition Key: /tenantId across all collections"],
-        ["Audit Ledger Storage", "Append-only in-memory chain + Azure Table/Blob", "Cosmos DB Dedicated Immutable Event Container"],
-        ["Document Storage", "Local Emulator / Azure Blob Storage LRS", "Azure Blob Storage GRS + Customer-Managed Keys (CMK)"],
-        ["Throughput & SLA", "Standard Free Tier Quota", "Autoscale 400 - 10,000 RU/s with 99.999% Availability SLA"],
-        ["Encryption at Rest", "Standard Microsoft-Managed Keys (SSE)", "Customer-Managed Keys (CMK) with Azure Key Vault HSM"],
-        ["Target Monthly Spend", "$0.00 / month (Zero Cost Free Tier)", "$450.00 - $1,200.00 / month (Production Gated)"]
+        ["Tenders", "/tenantId", "Active tenders, published practices, MoCI commercial activity codes, prices, and eligibility rules.", "Session Consistency, Indexed on /activities and /gradeRule"],
+        ["Vendors", "/tenantId", "Vendor company dossiers, 3-grade classifications, temporary suspensions, and fee exemptions.", "Session Consistency, Unique Commercial Registration indexing"],
+        ["Workflows", "/tenantId", "35-step statutory approval task instances, SLA trackers, return-for-correction histories.", "Session Consistency, State machine transition audit links"],
+        ["AuditEvents", "/tenantId", "Append-only immutable compliance log linking events with SHA-256 hash chaining (previousHash -> hash).", "Cryptographic Tamper-Evident Ledger, Mathematical verification"]
     ]
-    create_styled_table(doc, db_headers, db_data, [1.8, 2.3, 2.4])
+    create_styled_table(doc, db_headers, db_data, [1.5, 1.3, 2.3, 1.7])
+
+    add_callout(doc, "Live Azure Cosmos DB Free Tier Provisioning Details",
+                "• Account: kbm-cosmos-uyhsofjy5a23s.documents.azure.com (West Europe)\n"
+                "• Database: kbm-procurement-db (Shared 1,000 RU/s Free Tier)\n"
+                "• Partition Key: /tenantId (Physical & Logical isolation across all 4 containers)\n"
+                "• Cost: $0.00 / month (100% Lifetime Azure Free Tier)")
 
     # -------------------------------------------------------------
     # 8. CLOUD INFRASTRUCTURE & CI/CD DEPLOYMENT
