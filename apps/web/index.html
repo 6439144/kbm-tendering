@@ -12,6 +12,9 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <!-- Global Toast Alert Container -->
+    <div id="toast-container"></div>
+
     <!-- Top Global Announcement & Language Bar -->
     <nav class="global-navbar">
       <div class="brand-group">
@@ -309,27 +312,54 @@
             </div>
           </div>
 
-          <!-- Tender Publishing Panel -->
+          <!-- JAGGAER-Style Enterprise Sourcing Events Console -->
           <div class="panel-box" id="tour-tenders-table">
-            <div class="panel-header">
-              <h3 data-i18n="tendersCatalogStaff">سجل المناقصات والممارسات المطروحة</h3>
-              <button class="btn btn-sm btn-outline" id="btn-open-tender-modal" data-i18n="btnPublishTender">+ إنشاء وطرح مناقصة جديدة</button>
+            <div class="panel-header" style="flex-wrap:wrap; gap:1rem;">
+              <div>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <span class="pulsating-dot"></span>
+                  <h3 data-i18n="tendersCatalogStaff" style="font-size:1.15rem; color:var(--text-main);">سجل إدارة وعمليات المناقصات والممارسات (Sourcing Events Console)</h3>
+                </div>
+                <small class="text-muted">نظام إدارة العطاءات، المظاريف الفنية والمالية، ومسارات الرقابة المسبقة (JAGGAER Enterprise Edition)</small>
+              </div>
+              <button class="btn btn-primary" id="btn-open-tender-modal" data-i18n="btnPublishTender" style="box-shadow:var(--shadow-md);">
+                <span>✨</span>
+                <span>+ إنشاء وطرح مناقصة جديدة (Sourcing Studio)</span>
+              </button>
             </div>
+
+            <!-- Sourcing Filter Ribbon & Live Search Bar -->
+            <div class="sourcing-filter-ribbon">
+              <div class="filter-btn-group" id="staff-tender-filter-group">
+                <button type="button" class="filter-pill-btn active" data-filter="ALL">الكل (All Events)</button>
+                <button type="button" class="filter-pill-btn" data-filter="ACTIVE">المطروحة نشطة (Published)</button>
+                <button type="button" class="filter-pill-btn" data-filter="EVALUATION">قيد الدراسة الفنية (Technical Study)</button>
+                <button type="button" class="filter-pill-btn" data-filter="AUDIT">ديوان المحاسبة (Audit Bureau)</button>
+                <button type="button" class="filter-pill-btn" data-filter="AWARDED">الترسية والعقود (Awarded 100%)</button>
+              </div>
+
+              <div class="search-input-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="staff-tender-search-input" placeholder="بحث بالمرجع، العنوان، أو كود النشاط..." />
+              </div>
+            </div>
+
             <div class="table-responsive">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th data-i18n="thRef">رقم المرجع</th>
-                    <th data-i18n="thTitle">عنوان المناقصة / الممارسة</th>
-                    <th data-i18n="thActivities">الأنشطة المستهدفة</th>
-                    <th data-i18n="thGrade">الدرجة المطلوبة</th>
+                    <th data-i18n="thRef">رقم المناقصة / المرجع</th>
+                    <th data-i18n="thTitle">عنوان الطرح والإدارة الطالبة</th>
+                    <th>النوع ونظام المظاريف</th>
+                    <th data-i18n="thActivities">النشاط والتصنيف</th>
+                    <th>موعد إغلاق العطاءات</th>
                     <th data-i18n="thFee">قيمة الكراسة</th>
-                    <th data-i18n="thStatus">الحالة</th>
-                    <th data-i18n="thActions">الإجراءات</th>
+                    <th data-i18n="thStatus">حالة المسار</th>
+                    <th data-i18n="thActions">إجراءات التحكم</th>
                   </tr>
                 </thead>
                 <tbody id="staff-tenders-tbody">
-                  <!-- Rendered via JS -->
+                  <!-- Rendered dynamically via JS with JAGGAER-style cards -->
                 </tbody>
               </table>
             </div>
@@ -606,49 +636,379 @@
       </div>
     </div>
 
-    <!-- Modal 2: Create Tender Modal -->
+    <!-- Modal 2: JAGGAER-Style Sourcing Event & Tender Studio -->
     <div id="modal-create-tender" class="modal-overlay hidden">
-      <div class="modal-dialog">
-        <div class="modal-header">
-          <h3 data-i18n="modalTenderTitle">إنشاء وطرح مناقصة جديدة</h3>
-          <button class="modal-close" data-close="modal-create-tender">✕</button>
+      <div class="modal-dialog modal-xl">
+        <div class="modal-header" style="background:linear-gradient(135deg, #1e3a8a, #1d4ed8); color:white;">
+          <div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <span style="font-size:1.2rem;">🏛️</span>
+              <h3 style="color:white; font-size:1.15rem;">استوديو إنشاء وطرح المناقصات والممارسات (Sourcing Studio)</h3>
+            </div>
+            <small style="color:#bfdbfe;">بوابة إعداد كراسات الشروط، المظاريف الفنية والمالية، ومعايير التأهيل (JAGGAER One Platform)</small>
+          </div>
+          <button class="modal-close" style="color:white;" data-close="modal-create-tender">✕</button>
         </div>
+
+        <!-- 5-Step Wizard Stepper Header -->
+        <div class="wizard-stepper-header" id="tender-wizard-tabs">
+          <div class="wizard-step-tab active" data-step="1">
+            <span class="wizard-step-num">1</span>
+            <span>بيانات الطرح والنوع (Header)</span>
+          </div>
+          <div class="wizard-step-tab" data-step="2">
+            <span class="wizard-step-num">2</span>
+            <span>الأنشطة والتأهيل (Eligibility)</span>
+          </div>
+          <div class="wizard-step-tab" data-step="3">
+            <span class="wizard-step-num">3</span>
+            <span>المظاريف والكراسة (Envelopes)</span>
+          </div>
+          <div class="wizard-step-tab" data-step="4">
+            <span class="wizard-step-num">4</span>
+            <span>مسار الاعتماد واللجان (Workflow)</span>
+          </div>
+          <div class="wizard-step-tab" data-step="5">
+            <span class="wizard-step-num">5</span>
+            <span>المراجعة والاعتماد (Publish)</span>
+          </div>
+        </div>
+
         <form id="form-create-tender">
-          <div class="modal-body">
-            <div class="form-group">
-              <label data-i18n="labelTenderTitle">عنوان المناقصة:</label>
-              <input type="text" id="tender-title" value="صيانة وتشغيل كاميرات المراقبة والرادارات الأمنية" required />
+          <div class="modal-body" style="padding:1.5rem; max-height:65vh; overflow-y:auto;">
+            
+            <!-- STEP 1: HEADER & GENERAL INFO -->
+            <div class="wizard-step-pane active" id="wizard-pane-1">
+              <div class="form-row">
+                <div class="form-group col">
+                  <label>نوع عملية الطرح (Sourcing Strategy):</label>
+                  <select id="tender-sourcing-type" class="form-select" required>
+                    <option value="PUBLIC_TENDER" selected>مناقصة عامة علنية (Public Tender - Law 49/2016)</option>
+                    <option value="LIMITED_PRACTICE">ممارسة محدودة (Limited Practice)</option>
+                    <option value="DIRECT_PURCHASE">أمر شراء مباشر (Direct Purchase)</option>
+                    <option value="RFP_TWO_ENVELOPE">طلب تقديم عروض بمظروفين (Two-Envelope RFP)</option>
+                  </select>
+                </div>
+                <div class="form-group col">
+                  <label>رقم مرجع المناقصة الرسمي (Reference No):</label>
+                  <input type="text" id="tender-ref-number" class="form-control" value="MOI/TNT/2026/088" required />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>عنوان المناقصة (باللغة العربية):</label>
+                <input type="text" id="tender-title-ar" class="form-control" value="تحديث منظومة الأمن السيبراني وتوسعة الخوادم السحابية" required />
+              </div>
+
+              <div class="form-group">
+                <label>Tender Title (English):</label>
+                <input type="text" id="tender-title-en" class="form-control" value="Cybersecurity Infrastructure Modernization & Cloud Server Expansion" required />
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col">
+                  <label>الإدارة / الجهة الطالبة:</label>
+                  <input type="text" id="tender-dept" class="form-control" value="إدارة مركز نظم المعلومات — قطاع التكنولوجيا" required />
+                </div>
+                <div class="form-group col">
+                  <label>الميزانية التقديرية المعتمدة (د.ك):</label>
+                  <input type="number" id="tender-budget" class="form-control" value="180000" required />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col">
+                  <label>تاريخ ووقت إغلاق العطاءات (Closing Deadline):</label>
+                  <input type="datetime-local" id="tender-closing-date" class="form-control" value="2026-09-30T12:00" required />
+                </div>
+                <div class="form-group col">
+                  <label>مدة سريان العطاءات (Validity Period):</label>
+                  <select id="tender-validity" class="form-select">
+                    <option value="90">90 يوماً من تاريخ فض المظاريف (Statutory 90 Days)</option>
+                    <option value="120">120 يوماً</option>
+                  </select>
+                </div>
+              </div>
             </div>
-            <div class="form-group">
-              <label data-i18n="labelTargetActivity">النشاط المستهدف (تصنيف وزارة التجارة والصناعة):</label>
-              <select id="tender-activity" class="form-select" required>
-                <option value="IT-SYS-01">تكنولوجيا ونظم المعلومات (IT-SYS-01)</option>
-                <option value="SEC-SURV-02" selected>كاميرات المراقبة والأنظمة الأمنية (SEC-SURV-02)</option>
-                <option value="CYBER-SEC-09">عمليات الأمن السيبراني (CYBER-SEC-09)</option>
-                <option value="FACILITY-MGT-08">صيانة المنشآت والمرافق العامة (FACILITY-MGT-08)</option>
-              </select>
+
+            <!-- STEP 2: MoCI CLASSIFICATION & ELIGIBILITY -->
+            <div class="wizard-step-pane" id="wizard-pane-2">
+              <div class="form-group">
+                <label><strong>الأنشطة التجارية المستهدفة (تصنيف وزارة التجارة والصناعة MoCI ISIC):</strong></label>
+                <small class="text-muted" style="display:block;">اختر الأنشطة المعتمدة في السجل التجاري للشركات المؤهلة للتقديم:</small>
+                <div class="activity-chip-selector" id="activity-chip-group">
+                  <div class="activity-chip selected" data-code="IT-SYS-01">
+                    <span>💻</span> <span>تكنولوجيا ونظم المعلومات (IT-SYS-01)</span>
+                  </div>
+                  <div class="activity-chip selected" data-code="CYBER-SEC-09">
+                    <span>🛡️</span> <span>عمليات الأمن السيبراني (CYBER-SEC-09)</span>
+                  </div>
+                  <div class="activity-chip" data-code="SEC-SURV-02">
+                    <span>📹</span> <span>كاميرات ورادارات أمنية (SEC-SURV-02)</span>
+                  </div>
+                  <div class="activity-chip" data-code="FACILITY-MGT-08">
+                    <span>🏢</span> <span>صيانة المنشآت والمرافق (FACILITY-MGT-08)</span>
+                  </div>
+                  <div class="activity-chip" data-code="CONSULT-12">
+                    <span>📊</span> <span>الاستشارات والدراسات الفنية (CONSULT-12)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row" style="margin-top:1.25rem;">
+                <div class="form-group col">
+                  <label>درجة التصنيف المطلوبة (لجنة المناقصات المركزية CAPT):</label>
+                  <select id="tender-grade" class="form-select" required>
+                    <option value="FIRST">الدرجة الأولى (First Grade - كبرى الشركات)</option>
+                    <option value="SECOND" selected>الدرجة الثانية (Second Grade - فئة متوسطة)</option>
+                    <option value="THIRD">الدرجة الثالثة (Third Grade - مشاريع محددة)</option>
+                    <option value="ANY">أي درجة معتمدة (Any Approved Grade)</option>
+                  </select>
+                </div>
+                <div class="form-group col">
+                  <label>قاعدة مطابقة الدرجة (Hierarchy Match Policy):</label>
+                  <select id="tender-grade-mode" class="form-select">
+                    <option value="GRADE_AND_ABOVE" selected>الدرجة المحددة وما يعلوها (Grade and Above)</option>
+                    <option value="EXACT_GRADE">الدرجة المحددة حصراً (Exact Grade - دعم المبادرين)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col">
+                  <label>سعر شراء كراسة الشروط (د.ك):</label>
+                  <input type="number" id="tender-price" class="form-control" value="75" required />
+                </div>
+                <div class="form-group col">
+                  <label>نسبة الكفالة / التأمين الأولي (Initial Bid Bond):</label>
+                  <select id="tender-bond-pct" class="form-select">
+                    <option value="2">2% من القيمة الإجمالية للعطاء (Statutory 2%)</option>
+                    <option value="Fixed">مبلغ مقطوع (Fixed 5,000 KWD)</option>
+                  </select>
+                </div>
+              </div>
             </div>
-            <div class="form-row">
-              <div class="form-group col">
-                <label data-i18n="labelGradeRule">درجة التصنيف المطلوبة:</label>
-                <select id="tender-grade" class="form-select" required>
-                  <option value="FIRST">الدرجة الأولى (First Grade)</option>
-                  <option value="SECOND" selected>الدرجة الثانية (Second Grade)</option>
-                  <option value="THIRD">الدرجة الثالثة (Third Grade)</option>
-                  <option value="ANY">أي درجة (Any Grade)</option>
+
+            <!-- STEP 3: ENVELOPES & SPECIFICATIONS -->
+            <div class="wizard-step-pane" id="wizard-pane-3">
+              <div class="sourcing-envelope-card">
+                <div class="sourcing-envelope-header">
+                  <div>
+                    <strong style="color:var(--primary);">📁 الظرف الفني (Technical Envelope)</strong>
+                    <p style="font-size:0.8rem; color:var(--text-muted);">يتضمن كراسة الشروط الفنية، خطة العمل، والشهادات المهنية</p>
+                  </div>
+                  <span class="badge badge-primary">إلزامي (Mandatory)</span>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label>ملف كراسة الشروط والمواصفات الفنية (PDF):</label>
+                  <input type="file" id="tender-specs-file" class="form-control" />
+                  <small class="text-muted">ملاحظة: النظام يدمج علامة مائية ديناميكية مانعة للتسريب على المستند تلقائياً.</small>
+                </div>
+              </div>
+
+              <div class="sourcing-envelope-card">
+                <div class="sourcing-envelope-header">
+                  <div>
+                    <strong style="color:#059669;">💰 الظرف المالي (Financial Envelope & BOQ)</strong>
+                    <p style="font-size:0.8rem; color:var(--text-muted);">جدول الكميات، أسعار الوحدات، والإقرارات المالية الرسمية</p>
+                  </div>
+                  <span class="badge badge-success">مشفر (Sealed Envelope)</span>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label>جدول الكميات والأسعار (BOQ Excel / PDF):</label>
+                  <input type="file" id="tender-boq-file" class="form-control" />
+                </div>
+              </div>
+
+              <div class="form-group" style="background:#f8fafc; border:1px solid #e2e8f0; padding:1rem; border-radius:8px; margin-top:0.75rem;">
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+                  <input type="checkbox" id="tender-watermark-toggle" checked />
+                  <strong>🔒 تفعيل حماية العلامة المائية الديناميكية المانعة لتصوير الشاشة (Anti-Screenshot Protection)</strong>
+                </label>
+                <small class="text-muted" style="display:block; margin-top:4px; padding-right:1.5rem;">
+                  يطبع اسم المورد، التاريخ، ووقت المشاهدة على كل صفحة من الكراسة بصورة غير قابلة للإزالة.
+                </small>
+              </div>
+            </div>
+
+            <!-- STEP 4: WORKFLOW & COMMITTEES -->
+            <div class="wizard-step-pane" id="wizard-pane-4">
+              <div class="form-group">
+                <label>مسار الاعتماد والرقابة المسبقة (Statutory Workflow Pipeline):</label>
+                <select id="tender-wf-template" class="form-select">
+                  <option value="TENDERS" selected>مسار المناقصات الحكومية الشامل (35 خطوة — الفتوى والتشريع، CAPT، ديوان المحاسبة)</option>
+                  <option value="PRACTICES">مسار الممارسات السريعة (8 خطوات — لجنة الشراء)</option>
                 </select>
               </div>
-              <div class="form-group col">
-                <label data-i18n="labelPrice">قيمة كراسة الشروط (د.ك):</label>
-                <input type="number" id="tender-price" value="100" required />
+
+              <div class="form-row">
+                <div class="form-group col">
+                  <label>الوزن النسبي للتقييم الفني (%):</label>
+                  <input type="number" id="tender-tech-weight" class="form-control" value="70" min="50" max="100" />
+                </div>
+                <div class="form-group col">
+                  <label>الوزن النسبي للتقييم المالي (%):</label>
+                  <input type="number" id="tender-fin-weight" class="form-control" value="30" min="0" max="50" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>لجنة التقييم الفني والترسية المختصة:</label>
+                <select class="form-select">
+                  <option>لجنة دراسة عطاءات قطاع تكنولوجيا ونظم المعلومات (اللجنة الفنية الرئيسية)</option>
+                  <option>لجنة المشتريات والخدمات العامة</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- STEP 5: SUMMARY & PUBLISH -->
+            <div class="wizard-step-pane" id="wizard-pane-5">
+              <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:1.25rem; margin-bottom:1rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
+                  <span style="font-size:1.4rem;">📋</span>
+                  <h4 style="color:#166534; font-size:1.05rem;">ملخص جاهزية الطرح والاعتماد الرسمي (Sourcing Event Summary)</h4>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; font-size:0.88rem; color:#1e3a8a;">
+                  <div>• رقم المرجع: <strong id="summary-ref">MOI/TNT/2026/088</strong></div>
+                  <div>• النوع: <strong id="summary-type">Public Tender</strong></div>
+                  <div>• الميزانية التقديرية: <strong id="summary-budget">180,000 د.ك</strong></div>
+                  <div>• سعر الكراسة: <strong id="summary-price">75 د.ك</strong></div>
+                  <div>• الأنشطة المستهدفة: <strong id="summary-activities">IT-SYS-01, CYBER-SEC-09</strong></div>
+                  <div>• الدرجة المطلوبة: <strong id="summary-grade">Second Grade & Above</strong></div>
+                  <div>• المسار الرقابي: <strong>القانون 49/2016 (ديوان المحاسبة & CAPT)</strong></div>
+                  <div>• سجل التدقيق: <strong>SHA-256 Cryptographic Hash Chain</strong></div>
+                </div>
+              </div>
+
+              <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:0.85rem; font-size:0.85rem; color:#1d4ed8;">
+                ℹ️ <strong>تنبيه فوري:</strong> عند الضغط على "اعتماد ونشر المناقصة الآن"، ستظهر المناقصة فوراً في بوابة الموردين المؤهلين وسيتم إشعار الشركات المستوفية للشروط عبر البريد الإلكتروني ونظام الإشعارات.
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Wizard Footer Navigation -->
+          <div class="modal-footer" style="display:flex; justify-content:space-between;">
+            <div>
+              <button type="button" class="btn btn-secondary" data-close="modal-create-tender" data-i18n="btnCancel">إلغاء</button>
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+              <button type="button" class="btn btn-secondary" id="btn-wizard-prev" style="display:none;">السابق</button>
+              <button type="button" class="btn btn-primary" id="btn-wizard-next">التالي ➔</button>
+              <button type="submit" class="btn btn-success" id="btn-wizard-submit" style="display:none;">🚀 اعتماد ونشر المناقصة رسمياً</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 2C: JAGGAER-Style Sourcing Dossier & Envelope Inspector Modal -->
+    <div id="modal-tender-details" class="modal-overlay hidden">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-header" style="background:#0f172a; color:white;">
+          <div>
+            <h3 style="color:white; font-size:1.1rem;" id="dossier-title">ملف المناقصة والمظاريف الفنية (Sourcing Dossier)</h3>
+            <small style="color:#94a3b8;" id="dossier-ref">MOI/TNT/2026/001</small>
+          </div>
+          <button class="modal-close" style="color:white;" data-close="modal-tender-details">✕</button>
+        </div>
+        <div class="modal-body" id="dossier-body-content" style="max-height:65vh; overflow-y:auto;">
+          <!-- Rendered dynamically -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-tender-details">إغلاق الملف</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 2D: JAGGAER-Style Two-Envelope Evaluation & Scoring Matrix Modal -->
+    <div id="modal-evaluation-matrix" class="modal-overlay hidden">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-header" style="background:linear-gradient(135deg, #0f766e, #0d9488); color:white;">
+          <div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <span style="font-size:1.2rem;">⚖️</span>
+              <h3 style="color:white; font-size:1.15rem;">مصفوفة تقييم وفض العطاءات الفنية والمالية (Evaluation & Scoring Matrix)</h3>
+            </div>
+            <small style="color:#ccfbf1;">نظام فض المظاريف المشفرة وتوافق لجان التقييم (JAGGAER Consensus Scoring Engine)</small>
+          </div>
+          <button class="modal-close" style="color:white;" data-close="modal-evaluation-matrix">✕</button>
+        </div>
+        <div class="modal-body" style="max-height:68vh; overflow-y:auto; padding:1.25rem;">
+          <div style="background:#f0fdfa; border:1px solid #99f6e4; border-radius:8px; padding:1rem; margin-bottom:1.25rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <strong style="color:#115e59; font-size:0.95rem;" id="eval-tender-title">المناقصة: MOI/TNT/2026/001 — البنية التحتية للخوادم والربط السحابي</strong>
+                <p style="font-size:0.8rem; color:#134e48; margin-top:2px;">معادلة التقييم المعتمدة: (الوزن الفني 70% — الحد الأدنى للتأهيل 75 نقطة) + (الوزن المالي 30%)</p>
+              </div>
+              <span class="badge badge-success">ظرفين (Two-Envelope)</span>
+            </div>
+          </div>
+
+          <h4 style="font-size:0.92rem; color:var(--text-main); margin-bottom:0.6rem;">👥 قائمة العطاءات المقدمة من الموردين المؤهلين:</h4>
+
+          <!-- Vendor Bid Card 1 -->
+          <div class="sourcing-envelope-card" style="border-left:4px solid #0d9488;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+              <div>
+                <strong style="font-size:0.95rem; color:var(--text-main);">1. شركة الكويت لتكنولوجيا ونظم المعلومات (Kuwait Core IT Solutions)</strong>
+                <small class="text-muted" style="display:block;">السجل التجاري: CR-882910 | تصنيف CAPT: الدرجة الأولى | نشاط MoCI: IT-SYS-01</small>
+              </div>
+              <span class="badge badge-success" id="eval-status-1">مؤهل فنياً (Passed Tech) ✓</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.75rem; background:#f8fafc; padding:0.75rem; border-radius:6px; font-size:0.85rem;">
+              <div>
+                <span class="text-muted">التقييم الفني (70%):</span>
+                <div style="font-weight:700; color:var(--primary); font-size:1.05rem;">88.5 / 100</div>
+              </div>
+              <div>
+                <span class="text-muted">العرض المالي (30%):</span>
+                <div style="font-weight:700; color:#059669; font-size:1.05rem;">165,000 د.ك</div>
+              </div>
+              <div>
+                <span class="text-muted">الدرجة المرجحة الكلية:</span>
+                <div style="font-weight:800; color:#0f766e; font-size:1.15rem;">89.2% 🏆</div>
               </div>
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-close="modal-create-tender" data-i18n="btnCancel">إلغاء</button>
-            <button type="submit" class="btn btn-primary" data-i18n="btnPublish">اعتماد ونشر المناقصة</button>
+
+          <!-- Vendor Bid Card 2 -->
+          <div class="sourcing-envelope-card" style="border-left:4px solid #64748b;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+              <div>
+                <strong style="font-size:0.95rem; color:var(--text-main);">2. مجموعة الخليج للأمن السحابي (Gulf Cloud Security Co.)</strong>
+                <small class="text-muted" style="display:block;">السجل التجاري: CR-992104 | تصنيف CAPT: الدرجة الثانية | نشاط MoCI: CYBER-SEC-09</small>
+              </div>
+              <span class="badge badge-primary">مؤهل فنياً ✓</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.75rem; background:#f8fafc; padding:0.75rem; border-radius:6px; font-size:0.85rem;">
+              <div>
+                <span class="text-muted">التقييم الفني (70%):</span>
+                <div style="font-weight:700; color:var(--primary); font-size:1.05rem;">81.0 / 100</div>
+              </div>
+              <div>
+                <span class="text-muted">العرض المالي (30%):</span>
+                <div style="font-weight:700; color:#059669; font-size:1.05rem;">178,500 د.ك</div>
+              </div>
+              <div>
+                <span class="text-muted">الدرجة المرجحة الكلية:</span>
+                <div style="font-weight:800; color:#475569; font-size:1.15rem;">80.5%</div>
+              </div>
+            </div>
           </div>
-        </form>
+
+          <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:0.85rem; margin-top:1rem; font-size:0.82rem; color:#92400e;">
+            🔒 <strong>بروتوكول فض المظاريف الرقمي (Blind Envelope Protocol):</strong> تم فتح المظروف المالي بعد التحقق الآلي من اجتياز العطاءات للحد الفني الأدنى (75%) وموافقة أعضاء اللجنة الفنية.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-evaluation-matrix">إغلاق</button>
+          <button type="button" class="btn btn-success" onclick="confirmAwardRecommendation()">
+            📜 اعتماد تقرير التوصية بالترسية ورفعه للجنة الشراء (Award Recommendation) ✓
+          </button>
+        </div>
       </div>
     </div>
 

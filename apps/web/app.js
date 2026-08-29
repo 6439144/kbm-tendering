@@ -680,36 +680,6 @@ window.transitionWorkflowTask = async function(taskId, action) {
   }
 };
 
-// Render Staff Tenders Table
-async function loadStaffTenders() {
-  const tbody = document.getElementById('staff-tenders-tbody');
-  try {
-    const list = await apiCall('/api/tenders?tenantId=tenant-moi');
-    document.getElementById('kpi-published-tenders').innerText = list.length;
-
-    tbody.innerHTML = list.map(t => `
-      <tr>
-        <td><strong>${t.referenceNumber || t.id}</strong></td>
-        <td>${currentLang === 'ar' ? (t.titleAr || t.title) : t.title}</td>
-        <td>${(t.activities || []).map(a => `<span class="badge badge-outline">${a}</span>`).join(' ')}</td>
-        <td><span class="badge badge-primary">${t.gradeRule} (${t.gradeMatchMode})</span></td>
-        <td><strong>${t.priceKwd} KWD</strong></td>
-        <td><span class="badge badge-success">${t.status}</span></td>
-        <td style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-          <button class="btn btn-sm btn-secondary" onclick="openTenderJourneyModal('${t.referenceNumber}', '${escape(t.title)}')">
-            ${currentLang === 'ar' ? '🗺️ مسار المناقصة' : '🗺️ Journey'}
-          </button>
-          <button class="btn btn-sm btn-outline" onclick="viewTenderDoc('${t.id}', '${escape(t.title)}')">
-            ${currentLang === 'ar' ? '🔒 الكراسة' : '🔒 Specs'}
-          </button>
-        </td>
-      </tr>
-    `).join('');
-  } catch (err) {
-    console.error('Failed loading staff tenders:', err);
-  }
-}
-
 // Render Vendor Eligible Tenders
 async function loadVendorTenders() {
   const grid = document.getElementById('vendor-tenders-grid');
@@ -1181,11 +1151,6 @@ async function performLogin(email, password) {
 
     renderJourneyVisualizer();
 
-    // Auto-launch guided tour on login
-    setTimeout(() => {
-      startGuidedTour();
-    }, 400);
-
     loadStaffTenders();
     loadWorkflowBoard();
   } catch (err) {
@@ -1193,41 +1158,448 @@ async function performLogin(email, password) {
   }
 }
 
-document.getElementById('logout-button').addEventListener('click', () => {
-  currentUser = null;
-  document.getElementById('app-shell').classList.add('hidden');
-  document.getElementById('auth-controls').classList.add('hidden');
-  document.getElementById('login-screen').classList.remove('hidden');
-  document.getElementById('login-status').innerText = '';
-  document.getElementById('guided-tour-container').classList.add('hidden');
-});
+// ==========================================
+// TOAST NOTIFICATION ENGINE
+// ==========================================
+window.showToast = function(message, type = 'success', duration = 4000) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
 
-// Template Selector
-document.getElementById('select-workflow-template').addEventListener('change', (e) => {
-  loadWorkflowBoard(e.target.value);
-});
+  const toast = document.createElement('div');
+  toast.className = `toast-alert ${type}`;
+  const icon = type === 'success' ? '✅' : type === 'danger' ? '❌' : '⚠️';
 
-// Journey Selector
-document.getElementById('journey-tender-select').addEventListener('change', (e) => {
-  if (e.target.value === 'tnd-002') {
-    journeyCurrentStageIndex = 1;
-  } else {
-    journeyCurrentStageIndex = 2;
+  toast.innerHTML = `
+    <span style="font-size:1.2rem;">${icon}</span>
+    <div style="flex:1;">
+      <strong style="display:block; font-size:0.9rem; color:var(--text-main); margin-bottom:2px;">
+        ${type === 'success' ? (currentLang === 'ar' ? 'عملية ناجحة' : 'Success') : (currentLang === 'ar' ? 'تنبيه النظام' : 'Notice')}
+      </strong>
+      <p style="font-size:0.84rem; color:var(--text-secondary); margin:0;">${message}</p>
+    </div>
+  `;
+
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(-10px)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+};
+
+// ==========================================
+// JAGGAER SOURCING EVENTS CATALOG & TABLE
+// ==========================================
+let cachedStaffTenders = [];
+let activeStaffFilter = 'ALL';
+let activeStaffSearch = '';
+
+function renderStaffTendersTable() {
+  const tbody = document.getElementById('staff-tenders-tbody');
+  if (!tbody) return;
+
+  let filtered = [...cachedStaffTenders];
+
+  // Apply Filter Ribbon
+  if (activeStaffFilter === 'ACTIVE') {
+    filtered = filtered.filter(t => t.status === 'PUBLISHED' || t.status === 'ACTIVE');
+  } else if (activeStaffFilter === 'EVALUATION') {
+    filtered = filtered.filter(t => t.status === 'EVALUATION' || t.status === 'TECHNICAL_STUDY');
+  } else if (activeStaffFilter === 'AUDIT') {
+    filtered = filtered.filter(t => t.status === 'STATE_AUDIT_REVIEW');
+  } else if (activeStaffFilter === 'AWARDED') {
+    filtered = filtered.filter(t => t.status === 'AWARDED' || t.status === 'CONTRACT_SIGNED');
   }
-  renderJourneyVisualizer();
-});
 
-// Marketplace link on login page
-document.getElementById('link-marketplace-preview').addEventListener('click', (e) => {
-  e.preventDefault();
-  performLogin('tenant-admin@kbm.demo', 'password123').then(() => {
-    document.querySelector('[data-portal="marketplace"]').click();
+  // Apply Live Search
+  if (activeStaffSearch.trim() !== '') {
+    const q = activeStaffSearch.toLowerCase();
+    filtered = filtered.filter(t => {
+      const ref = (t.referenceNumber || t.id || '').toLowerCase();
+      const title = (t.title || '').toLowerCase();
+      const titleAr = (t.titleAr || '').toLowerCase();
+      const dept = (t.requestingDepartment || t.requestingDepartmentAr || '').toLowerCase();
+      const acts = (t.activities || []).join(' ').toLowerCase();
+      return ref.includes(q) || title.includes(q) || titleAr.includes(q) || dept.includes(q) || acts.includes(q);
+    });
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align:center; padding:2.5rem; color:var(--text-muted);">
+          <span style="font-size:2rem; display:block; margin-bottom:0.5rem;">🔍</span>
+          ${currentLang === 'ar' ? 'لا توجد مناقصات تطابق معايير البحث الحالية' : 'No sourcing events match your filter/search criteria'}
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(t => {
+    const isAr = currentLang === 'ar';
+    const displayTitle = isAr ? (t.titleAr || t.title) : t.title;
+    const dept = isAr ? (t.requestingDepartmentAr || t.requestingDepartment || 'إدارة مركز نظم المعلومات') : (t.requestingDepartment || 'Information Systems Dept');
+    const sourcingTypeBadge = t.sourcingType === 'LIMITED_PRACTICE' ? (isAr ? 'ممارسة محدودة' : 'Limited Practice') : (isAr ? 'مناقصة عامة (2-Envelope)' : 'Public Tender (2-Envelope)');
+    const statusClass = t.status === 'PUBLISHED' ? 'badge-success' : t.status === 'AWARDED' ? 'badge-primary' : 'badge-info';
+
+    return `
+      <tr class="${t._isNew ? 'row-newly-added' : ''}">
+        <td>
+          <div style="display:flex; align-items:center;">
+            <span class="pulsating-dot"></span>
+            <strong>${t.referenceNumber || t.id}</strong>
+          </div>
+          <small class="text-muted" style="font-size:0.75rem;">ID: ${t.id.slice(0, 10)}</small>
+        </td>
+        <td>
+          <strong style="color:var(--text-main); font-size:0.9rem; display:block;">${displayTitle}</strong>
+          <small style="color:var(--text-muted); font-size:0.78rem;">🏛️ ${dept}</small>
+        </td>
+        <td>
+          <span class="badge badge-outline">${sourcingTypeBadge}</span>
+          <div style="margin-top:3px;"><small class="text-muted">${isAr ? 'ظرف فني + مالي' : 'Tech + Fin Envelopes'}</small></div>
+        </td>
+        <td>
+          <div style="display:flex; gap:0.25rem; flex-wrap:wrap; margin-bottom:3px;">
+            ${(t.activities || ['IT-SYS-01']).map(a => `<span class="badge badge-info" style="font-size:0.7rem;">${a}</span>`).join('')}
+          </div>
+          <span class="badge badge-primary" style="font-size:0.72rem;">${t.gradeRule || 'SECOND'} (${t.gradeMatchMode || 'GRADE_AND_ABOVE'})</span>
+        </td>
+        <td>
+          <strong>${t.closingDate ? new Date(t.closingDate).toLocaleDateString(isAr ? 'ar-KW' : 'en-US') : '30/09/2026'}</strong>
+          <div style="color:#d97706; font-size:0.75rem; font-weight:700;">⏳ ${isAr ? '32 يوماً متبقية' : '32 Days left'}</div>
+        </td>
+        <td><strong style="color:var(--primary); font-size:0.95rem;">${t.priceKwd || 75} د.ك</strong></td>
+        <td><span class="badge ${statusClass}">${t.status || 'PUBLISHED'}</span></td>
+        <td>
+          <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+            <button class="btn btn-sm btn-primary" onclick="viewTenderDossier('${t.id}')" title="فحص المظاريف والملف">
+              🔍 ${isAr ? 'الملف' : 'Dossier'}
+            </button>
+            <button class="btn btn-sm btn-success" onclick="openEvaluationMatrix('${t.id}', '${escape(t.title)}')" title="مصفوفة التقييم وفض المظاريف">
+              ⚖️ ${isAr ? 'التقييم' : 'Scoring'}
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="openTenderJourneyModal('${t.referenceNumber || t.id}', '${escape(t.title)}')">
+              🗺️ ${isAr ? 'المسار' : 'Journey'}
+            </button>
+            <button class="btn btn-sm btn-outline" onclick="viewTenderDoc('${t.id}', '${escape(t.title)}')">
+              🔒 ${isAr ? 'الكراسة' : 'Specs'}
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Open Evaluation Matrix Modal
+window.openEvaluationMatrix = function(tenderId, titleEncoded) {
+  const title = unescape(titleEncoded || '');
+  const elTitle = document.getElementById('eval-tender-title');
+  if (elTitle && title) elTitle.innerText = `المناقصة: ${title}`;
+  document.getElementById('modal-evaluation-matrix').classList.remove('hidden');
+};
+
+// Confirm Award Recommendation
+window.confirmAwardRecommendation = async function() {
+  document.getElementById('modal-evaluation-matrix').classList.add('hidden');
+  showToast(
+    currentLang === 'ar'
+      ? '🎉 تم اعتماد تقرير التوصية بالترسية لصالح شركة الكويت لتكنولوجيا المعلومات (89.2%) ورفع الملف إلى لجنة الشراء وديوان المحاسبة.'
+      : '🎉 Award Recommendation report approved for Kuwait Core IT (89.2%) and forwarded to State Audit Bureau.',
+    'success'
+  );
+  loadNotifications();
+  loadAuditLog();
+};
+
+async function loadStaffTenders() {
+  try {
+    const list = await apiCall('/api/tenders?tenantId=tenant-moi');
+    cachedStaffTenders = list;
+    const kpiEl = document.getElementById('kpi-published-tenders');
+    if (kpiEl) kpiEl.innerText = list.length;
+    renderStaffTendersTable();
+    updateJourneySelectorDropdown();
+  } catch (err) {
+    console.error('Failed loading staff tenders:', err);
+  }
+}
+
+function updateJourneySelectorDropdown() {
+  const select = document.getElementById('journey-tender-select');
+  if (!select || cachedStaffTenders.length === 0) return;
+
+  const isAr = currentLang === 'ar';
+  select.innerHTML = cachedStaffTenders.map(t => `
+    <option value="${t.id}">${t.referenceNumber || t.id} — ${isAr ? (t.titleAr || t.title) : t.title}</option>
+  `).join('');
+}
+
+// Dossier Inspector Modal
+window.viewTenderDossier = function(tenderId) {
+  const tender = cachedStaffTenders.find(t => t.id === tenderId) || cachedStaffTenders[0] || {
+    id: tenderId,
+    referenceNumber: 'MOI/TNT/2026/001',
+    title: 'Ministry Core IT Infrastructure & Cloud Integration',
+    titleAr: 'تحديث البنية التحتية لتكنولوجيا ونظم المعلومات والربط السحابي',
+    activities: ['IT-SYS-01'],
+    gradeRule: 'SECOND',
+    gradeMatchMode: 'GRADE_AND_ABOVE',
+    priceKwd: 75,
+    status: 'PUBLISHED'
+  };
+
+  const isAr = currentLang === 'ar';
+  document.getElementById('dossier-ref').innerText = `${tender.referenceNumber || tender.id} | SHA-256 Verified Seal`;
+  document.getElementById('dossier-title').innerText = isAr ? (tender.titleAr || tender.title) : tender.title;
+
+  const content = document.getElementById('dossier-body-content');
+  content.innerHTML = `
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:1.25rem; margin-bottom:1rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+        <span class="badge badge-success">● ${tender.status || 'PUBLISHED'}</span>
+        <strong style="color:var(--primary); font-size:1.1rem;">${tender.priceKwd || 75} KWD</strong>
+      </div>
+      <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.6;">
+        ${isAr ? (tender.descriptionAr || tender.description || 'كراسة الشروط والمواصفات الفنية المعتمدة رسمياً بموجب القانون 49/2016.') : (tender.description || 'Approved tender specifications.')}
+      </p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; font-size:0.82rem; margin-top:0.75rem; border-top:1px solid #e2e8f0; padding-top:0.75rem;">
+        <div>• ${isAr ? 'الدرجة المطلوبة:' : 'Req Grade:'} <strong>${tender.gradeRule || 'SECOND'} (${tender.gradeMatchMode || 'GRADE_AND_ABOVE'})</strong></div>
+        <div>• ${isAr ? 'الأنشطة المعتمدة:' : 'Activities:'} <strong>${(tender.activities || []).join(', ')}</strong></div>
+        <div>• ${isAr ? 'نظام المظاريف:' : 'Envelope System:'} <strong>Two-Envelope (Technical 70% + Financial 30%)</strong></div>
+        <div>• ${isAr ? 'حماية المستندات:' : 'Protection:'} <strong>Dynamic Watermark Canvas Anti-Screenshot</strong></div>
+      </div>
+    </div>
+
+    <h4 style="font-size:0.95rem; color:var(--text-main); margin-bottom:0.5rem;">📁 ${isAr ? 'المظاريف والمستندات الرسمية المرفقة (Sourcing Envelopes):' : 'Attached Envelopes & Specifications:'}</h4>
+    <div class="sourcing-envelope-card" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <strong>📄 Technical_Specifications_Booklet_${tender.referenceNumber ? tender.referenceNumber.replace(/\//g, '_') : 'MOI'}.pdf</strong>
+        <small style="display:block; color:var(--text-muted);">PDF Document (4.2 MB) — Watermarked with Dynamic Anti-Screenshot Protection</small>
+      </div>
+      <button class="btn btn-sm btn-outline" onclick="viewTenderDoc('${tender.id}', '${escape(tender.title)}')">
+        🔒 ${isAr ? 'معاينة محمية' : 'Secure View'}
+      </button>
+    </div>
+
+    <div class="sourcing-envelope-card" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <strong>📊 Bill_of_Quantities_BOQ_MOI_2026.xlsx</strong>
+        <small style="display:block; color:var(--text-muted);">Financial Envelope (Sealed until Technical Evaluation completes)</small>
+      </div>
+      <span class="badge badge-outline">🔒 ${isAr ? 'مغلق ومحمي' : 'Sealed'}</span>
+    </div>
+
+    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:0.85rem; margin-top:1rem; font-size:0.8rem; color:#166534;">
+      🛡️ <strong>Cryptographic Audit Seal (Cosmos DB):</strong> Event SHA-256 hash verified and chained to active tenant ledger.
+    </div>
+  `;
+
+  document.getElementById('modal-tender-details').classList.remove('hidden');
+};
+
+// Filter Ribbon & Search Bar Event Listeners
+const filterGroup = document.getElementById('staff-tender-filter-group');
+if (filterGroup) {
+  filterGroup.querySelectorAll('.filter-pill-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterGroup.querySelectorAll('.filter-pill-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeStaffFilter = btn.getAttribute('data-filter');
+      renderStaffTendersTable();
+    });
+  });
+}
+
+const searchInput = document.getElementById('staff-tender-search-input');
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    activeStaffSearch = e.target.value;
+    renderStaffTendersTable();
+  });
+}
+
+// ==========================================
+// JAGGAER 5-STEP SOURCING STUDIO CONTROLLER
+// ==========================================
+let currentWizardStep = 1;
+
+function goToWizardStep(step) {
+  currentWizardStep = step;
+
+  // Update tabs
+  document.querySelectorAll('#tender-wizard-tabs .wizard-step-tab').forEach(tab => {
+    const s = Number(tab.getAttribute('data-step'));
+    tab.classList.remove('active', 'completed');
+    if (s === currentWizardStep) {
+      tab.classList.add('active');
+    } else if (s < currentWizardStep) {
+      tab.classList.add('completed');
+    }
+  });
+
+  // Update panes
+  document.querySelectorAll('.wizard-step-pane').forEach((pane, idx) => {
+    pane.classList.remove('active');
+    if (idx + 1 === currentWizardStep) {
+      pane.classList.add('active');
+    }
+  });
+
+  // Buttons
+  const btnPrev = document.getElementById('btn-wizard-prev');
+  const btnNext = document.getElementById('btn-wizard-next');
+  const btnSubmit = document.getElementById('btn-wizard-submit');
+
+  if (btnPrev) btnPrev.style.display = currentWizardStep > 1 ? 'inline-flex' : 'none';
+  if (currentWizardStep === 5) {
+    if (btnNext) btnNext.style.display = 'none';
+    if (btnSubmit) btnSubmit.style.display = 'inline-flex';
+    updateWizardSummary();
+  } else {
+    if (btnNext) btnNext.style.display = 'inline-flex';
+    if (btnSubmit) btnSubmit.style.display = 'none';
+  }
+}
+
+function updateWizardSummary() {
+  const ref = document.getElementById('tender-ref-number')?.value || 'MOI/TNT/2026/088';
+  const type = document.getElementById('tender-sourcing-type')?.value || 'PUBLIC_TENDER';
+  const budget = document.getElementById('tender-budget')?.value || '180000';
+  const price = document.getElementById('tender-price')?.value || '75';
+  const grade = document.getElementById('tender-grade')?.value || 'SECOND';
+
+  const selectedChips = Array.from(document.querySelectorAll('#activity-chip-group .activity-chip.selected'))
+    .map(c => c.getAttribute('data-code'));
+
+  const sRef = document.getElementById('summary-ref');
+  const sType = document.getElementById('summary-type');
+  const sBudget = document.getElementById('summary-budget');
+  const sPrice = document.getElementById('summary-price');
+  const sActivities = document.getElementById('summary-activities');
+  const sGrade = document.getElementById('summary-grade');
+
+  if (sRef) sRef.innerText = ref;
+  if (sType) sType.innerText = type;
+  if (sBudget) sBudget.innerText = `${Number(budget).toLocaleString()} د.ك`;
+  if (sPrice) sPrice.innerText = `${price} د.ك`;
+  if (sActivities) sActivities.innerText = selectedChips.join(', ') || 'IT-SYS-01';
+  if (sGrade) sGrade.innerText = `${grade} Grade`;
+}
+
+// Wizard Tab Direct Click
+document.querySelectorAll('#tender-wizard-tabs .wizard-step-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const s = Number(tab.getAttribute('data-step'));
+    goToWizardStep(s);
   });
 });
 
-// ==========================================
-// MODALS & INTERACTIVE ACTIONS
-// ==========================================
+// Wizard Next Button
+const btnWizardNext = document.getElementById('btn-wizard-next');
+if (btnWizardNext) {
+  btnWizardNext.addEventListener('click', () => {
+    if (currentWizardStep < 5) {
+      goToWizardStep(currentWizardStep + 1);
+    }
+  });
+}
+
+// Wizard Prev Button
+const btnWizardPrev = document.getElementById('btn-wizard-prev');
+if (btnWizardPrev) {
+  btnWizardPrev.addEventListener('click', () => {
+    if (currentWizardStep > 1) {
+      goToWizardStep(currentWizardStep - 1);
+    }
+  });
+}
+
+// Activity Chips Toggle
+document.querySelectorAll('#activity-chip-group .activity-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    chip.classList.toggle('selected');
+  });
+});
+
+// Create Tender Modal Open
+const btnOpenTender = document.getElementById('btn-open-tender-modal');
+if (btnOpenTender) {
+  btnOpenTender.addEventListener('click', () => {
+    // Generate fresh reference number
+    const randomRefNum = Math.floor(Math.random() * 900) + 100;
+    const refInput = document.getElementById('tender-ref-number');
+    if (refInput) refInput.value = `MOI/TNT/2026/${randomRefNum}`;
+    goToWizardStep(1);
+    document.getElementById('modal-create-tender').classList.remove('hidden');
+  });
+}
+
+// Sourcing Studio Form Submit
+const formCreateTender = document.getElementById('form-create-tender');
+if (formCreateTender) {
+  formCreateTender.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const sourcingType = document.getElementById('tender-sourcing-type').value;
+    const refNumber = document.getElementById('tender-ref-number').value;
+    const titleAr = document.getElementById('tender-title-ar').value;
+    const titleEn = document.getElementById('tender-title-en').value;
+    const dept = document.getElementById('tender-dept').value;
+    const budget = Number(document.getElementById('tender-budget').value);
+    const closingDate = document.getElementById('tender-closing-date').value;
+    const grade = document.getElementById('tender-grade').value;
+    const gradeMode = document.getElementById('tender-grade-mode').value;
+    const price = Number(document.getElementById('tender-price').value);
+
+    const selectedActivities = Array.from(document.querySelectorAll('#activity-chip-group .activity-chip.selected'))
+      .map(c => c.getAttribute('data-code'));
+    if (selectedActivities.length === 0) selectedActivities.push('IT-SYS-01');
+
+    try {
+      const res = await apiCall('/api/tenders', 'POST', {
+        tenantId: 'tenant-moi',
+        referenceNumber: refNumber,
+        title: titleEn || titleAr,
+        titleAr: titleAr,
+        description: `Official tender for ${titleEn}. Estimated budget: ${budget} KWD.`,
+        descriptionAr: `مناقصة رسمية معتمدة: ${titleAr}. الميزانية التقديرية: ${budget} د.ك.`,
+        requestingDepartment: dept,
+        requestingDepartmentAr: dept,
+        sourcingType,
+        closingDate,
+        activities: selectedActivities,
+        gradeRule: grade,
+        gradeMatchMode: gradeMode,
+        priceKwd: price
+      });
+
+      // Mark newly added item
+      res._isNew = true;
+      cachedStaffTenders.unshift(res);
+
+      document.getElementById('modal-create-tender').classList.add('hidden');
+      renderStaffTendersTable();
+      loadVendorTenders();
+      loadAuditLog();
+      loadNotifications();
+
+      const kpiEl = document.getElementById('kpi-published-tenders');
+      if (kpiEl) kpiEl.innerText = cachedStaffTenders.length;
+
+      showToast(
+        currentLang === 'ar' 
+          ? `🎉 تم إنشاء وطرح المناقصة بنجاح برقم: ${res.referenceNumber}\nأصبحت متاحة للموردين المؤهلين وموثقة في سجل ديوان المحاسبة.` 
+          : `🎉 Sourcing Event ${res.referenceNumber} created & published successfully!`,
+        'success'
+      );
+    } catch (err) {
+      showToast('Tender creation error: ' + err.message, 'danger');
+    }
+  });
+}
 
 // Generic Modal Closer
 document.querySelectorAll('[data-close]').forEach(btn => {
@@ -1270,9 +1642,12 @@ if (formRequestIntake) {
 
     // Rule Check: FR-012
     if (channel === 'manual_gm_letter' && (!fileInput.files || fileInput.files.length === 0)) {
-      alert(currentLang === 'ar' 
-        ? '⚠️ خطأ نظام: يشترط إرفاق المسح الضوئي لكتاب المدير العام (FR-012).' 
-        : '⚠️ System Error: Scanned copy of GM letter is mandatory (FR-012).');
+      showToast(
+        currentLang === 'ar' 
+          ? '⚠️ خطأ نظام: يشترط إرفاق المسح الضوئي لكتاب المدير العام (FR-012).' 
+          : '⚠️ System Error: Scanned copy of GM letter is mandatory (FR-012).',
+        'warning'
+      );
       return;
     }
 
@@ -1291,9 +1666,12 @@ if (formRequestIntake) {
       });
 
       document.getElementById('modal-request-intake').classList.add('hidden');
-      alert(currentLang === 'ar' 
-        ? `✅ تم تسجيل طلب المناقصة بنجاح برقم: ${res.id}\nتم توثيق العملية في سجل التدقيق الرقمي (SHA-256).` 
-        : `✅ Tender request registered successfully with ID: ${res.id}\nAudit event logged with SHA-256 hash chaining.`);
+      showToast(
+        currentLang === 'ar' 
+          ? `✅ تم تسجيل طلب المناقصة بنجاح برقم: ${res.id}\nتم توثيق العملية في سجل التدقيق الرقمي (SHA-256).` 
+          : `✅ Tender request registered successfully with ID: ${res.id}`,
+        'success'
+      );
       
       const kpiReqs = document.getElementById('kpi-active-reqs');
       if (kpiReqs) kpiReqs.innerText = Number(kpiReqs.innerText || 0) + 1;
@@ -1301,54 +1679,7 @@ if (formRequestIntake) {
       loadAuditLog();
       loadNotifications();
     } catch (err) {
-      alert('Request error: ' + err.message);
-    }
-  });
-}
-
-// Create Tender Modal Open
-const btnOpenTender = document.getElementById('btn-open-tender-modal');
-if (btnOpenTender) {
-  btnOpenTender.addEventListener('click', () => {
-    document.getElementById('modal-create-tender').classList.remove('hidden');
-  });
-}
-
-// Create Tender Form Submit
-const formCreateTender = document.getElementById('form-create-tender');
-if (formCreateTender) {
-  formCreateTender.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const title = document.getElementById('tender-title').value;
-    const activity = document.getElementById('tender-activity').value;
-    const grade = document.getElementById('tender-grade').value;
-    const price = Number(document.getElementById('tender-price').value);
-
-    try {
-      const res = await apiCall('/api/tenders', 'POST', {
-        tenantId: 'tenant-moi',
-        referenceNumber: `MOI/TNT/2026/00${Math.floor(Math.random() * 90) + 10}`,
-        title,
-        titleAr: title,
-        description: 'Approved tender specifications and terms booklet.',
-        descriptionAr: 'كراسة الشروط والمواصفات الفنية المعتمدة رسمياً.',
-        activities: [activity],
-        gradeRule: grade,
-        gradeMatchMode: grade === 'ANY' ? 'ANY' : 'GRADE_AND_ABOVE',
-        priceKwd: price
-      });
-
-      document.getElementById('modal-create-tender').classList.add('hidden');
-      alert(currentLang === 'ar' 
-        ? `🎉 تم إنشاء وطرح المناقصة بنجاح برقم: ${res.referenceNumber}\nأصبحت المناقصة متاحة للموردين المؤهلين حسب النشاط والدرجة.` 
-        : `🎉 Tender created & published successfully with Ref: ${res.referenceNumber}`);
-      
-      loadStaffTenders();
-      loadVendorTenders();
-      loadAuditLog();
-      loadNotifications();
-    } catch (err) {
-      alert('Tender creation error: ' + err.message);
+      showToast('Request error: ' + err.message, 'danger');
     }
   });
 }
@@ -1380,9 +1711,12 @@ if (formTaskReview) {
       });
 
       document.getElementById('modal-task-review').classList.add('hidden');
-      alert(currentLang === 'ar' 
-        ? `✅ تم تنفيذ القرار (${decision === 'APPROVE' ? 'اعتماد الخطوة' : 'إعادة للتعديل'}) بنجاح وتوثيقه بسجل التدقيق الرقمي.` 
-        : `✅ Workflow transition executed successfully (${decision}).`);
+      showToast(
+        currentLang === 'ar' 
+          ? `✅ تم تنفيذ القرار (${decision === 'APPROVE' ? 'اعتماد الخطوة' : 'إعادة للتعديل'}) بنجاح وتوثيقه بسجل التدقيق الرقمي.` 
+          : `✅ Workflow transition executed successfully (${decision}).`,
+        'success'
+      );
 
       if (currentWorkflowInstance) {
         currentWorkflowInstance = await apiCall(`/api/workflow/instances/${currentWorkflowInstance.id}`);
@@ -1391,7 +1725,7 @@ if (formTaskReview) {
       loadAuditLog();
       loadNotifications();
     } catch (err) {
-      alert('Transition error: ' + err.message);
+      showToast('Transition error: ' + err.message, 'danger');
     }
   });
 }
@@ -1402,15 +1736,51 @@ window.advanceJourneyDemo = function() {
     journeyCurrentStageIndex++;
     renderJourneyVisualizer();
     if (journeyCurrentStageIndex === JOURNEY_STAGES.length - 1) {
-      alert(currentLang === 'ar' 
-        ? '🏆 تم الوصول للمرحلة النهائية: ديوان المحاسبة وتوقيع العقد 100% من سعادة وكيل الوزارة!' 
-        : '🏆 Final statutory stage reached: State Audit Bureau pre-audit approved & 100% Contract signed by Undersecretary!');
+      showToast(
+        currentLang === 'ar' 
+          ? '🏆 تم الوصول للمرحلة النهائية: ديوان المحاسبة وتوقيع العقد 100% من سعادة وكيل الوزارة!' 
+          : '🏆 Final statutory stage reached: State Audit Bureau pre-audit approved & 100% Contract signed by Undersecretary!',
+        'success'
+      );
     }
   } else {
     journeyCurrentStageIndex = 0;
     renderJourneyVisualizer();
   }
 };
+
+// Logout Handlers
+document.getElementById('logout-button').addEventListener('click', () => {
+  currentUser = null;
+  document.getElementById('app-shell').classList.add('hidden');
+  document.getElementById('auth-controls').classList.add('hidden');
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('login-status').innerText = '';
+  document.getElementById('guided-tour-container').classList.add('hidden');
+});
+
+// Template Selector
+document.getElementById('select-workflow-template').addEventListener('change', (e) => {
+  loadWorkflowBoard(e.target.value);
+});
+
+// Journey Selector
+document.getElementById('journey-tender-select').addEventListener('change', (e) => {
+  if (e.target.value === 'tnd-002') {
+    journeyCurrentStageIndex = 1;
+  } else {
+    journeyCurrentStageIndex = 2;
+  }
+  renderJourneyVisualizer();
+});
+
+// Marketplace link on login page
+document.getElementById('link-marketplace-preview').addEventListener('click', (e) => {
+  e.preventDefault();
+  performLogin('tenant-admin@kbm.demo', 'password123').then(() => {
+    document.querySelector('[data-portal="marketplace"]').click();
+  });
+});
 
 // Initialization
 setLanguage('ar');

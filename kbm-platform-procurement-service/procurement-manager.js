@@ -68,7 +68,11 @@ class ProcurementManager {
     gradeRule = 'SECOND', // Target grade: 'FIRST', 'SECOND', 'THIRD', or 'ANY'
     gradeMatchMode = 'GRADE_AND_ABOVE', // 'EXACT_GRADE' or 'GRADE_AND_ABOVE'
     priceKwd = 75,
-    submissionDeadline = null
+    submissionDeadline = null,
+    requestingDepartment = 'Information Systems Center',
+    requestingDepartmentAr = 'إدارة مركز نظم المعلومات',
+    sourcingType = 'PUBLIC_TENDER',
+    closingDate = null
   }) {
     if (!title || !activities.length) {
       throw new Error('Tender requires title and at least one target activity');
@@ -84,11 +88,15 @@ class ProcurementManager {
       titleAr: titleAr || title,
       description,
       descriptionAr: descriptionAr || description,
+      requestingDepartment,
+      requestingDepartmentAr: requestingDepartmentAr || requestingDepartment,
+      sourcingType,
       activities,
       gradeRule,
       gradeMatchMode,
       priceKwd,
-      submissionDeadline: submissionDeadline || new Date(Date.now() + 30 * 86400000).toISOString(),
+      closingDate: closingDate || submissionDeadline || new Date(Date.now() + 30 * 86400000).toISOString(),
+      submissionDeadline: submissionDeadline || closingDate || new Date(Date.now() + 30 * 86400000).toISOString(),
       status: 'PUBLISHED', // DRAFT, PUBLISHED, CLOSED, AWARDED
       createdAt: new Date().toISOString()
     };
