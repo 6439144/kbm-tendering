@@ -34,8 +34,8 @@ resource bootstrapAppServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = if (is
   tags: defaultTags
   kind: 'linux'
   sku: {
-    name: 'B1'
-    tier: 'Basic'
+    name: 'F1'
+    tier: 'Free'
   }
   properties: {
     reserved: true
